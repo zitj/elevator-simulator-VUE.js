@@ -1,14 +1,25 @@
 <template>
-	<div class="passanger">
-		<span class="icon">🧍🏻‍♂️</span>
-		<div class="words">{{ 'To floor: ' }}</div>
+	<div>
+		<div v-for="passenger in passengers" :key="passenger.id">
+			<div v-if="passenger.status == 'waiting' && passenger.waitingOnFloorNumber == floorId" class="passanger" :style="{ left: `${passenger.position.left}px` }">
+				<span class="icon">🧍🏻‍♂️</span>
+				<div class="words">{{ `To floor: ${passenger.destinationFloor}` }}</div>
+			</div>
+		</div>
 	</div>
 </template>
 
 <script>
+import { mapGetters } from 'vuex';
 export default {
 	name: 'PassengerComponent',
-	// Your component's JavaScript logic goes here
+	props: {
+		floorId: null,
+	},
+	computed: {
+		...mapGetters(['passengers']),
+	},
+	watch: {},
 };
 </script>
 

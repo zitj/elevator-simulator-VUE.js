@@ -12,7 +12,7 @@ interface State {
 	passengersCurrentFloorCall: number;
 	passengersDestinationFloorCall: number;
 	elevators: Elevator[];
-	passangers: Passenger[];
+	passengers: Passenger[];
 	floors: Floor[];
 	nearestElevator: Elevator | null;
 }
@@ -24,7 +24,7 @@ const state: State = {
 	passengersCurrentFloorCall: 0,
 	passengersDestinationFloorCall: 0,
 	elevators: [],
-	passangers: [],
+	passengers: [],
 	floors: [],
 	nearestElevator: null,
 };
@@ -47,32 +47,54 @@ const mutations = {
 		});
 	},
 
-	RESET_ELEVATORS(state: State) {
+	RESET_ELEVATORS(state: State): void {
 		state.elevators = [];
 	},
-	SET_PASSENGERS_CURRENT_FLOOR_CALL(state: State, passengersCurrentFloorCall: number) {
+	SET_PASSENGERS_CURRENT_FLOOR_CALL(state: State, passengersCurrentFloorCall: number): void {
 		state.passengersCurrentFloorCall = passengersCurrentFloorCall;
 	},
-	SET_PASSENGERS_DESTINATION_FLOOR_CALL(state: State, passengersDestinationFloorCall: number) {
+	SET_PASSENGERS_DESTINATION_FLOOR_CALL(state: State, passengersDestinationFloorCall: number): void {
 		state.passengersDestinationFloorCall = passengersDestinationFloorCall;
 	},
-	SET_NEAREST_ELEVATOR(state: State, elevator: Elevator) {
+	SET_NEAREST_ELEVATOR(state: State, elevator: Elevator): void {
 		state.nearestElevator = elevator;
 	},
-	CALL_ELEVATOR(state: State, payload: { currentFloor: number; destinationFloor: number }) {
+	CALL_ELEVATOR(state: State, payload: { currentFloor: number; destinationFloor: number }): { currentFloor: number; destinationFloor: number } {
 		return payload;
 	},
-	UPDATE_NEAREST_ELEVATOR(state: State, payload: Partial<Elevator>) {
+	UPDATE_NEAREST_ELEVATOR(state: State, payload: Partial<Elevator>): void {
 		if (state.nearestElevator) {
 			Object.assign(state.nearestElevator, payload);
 		}
 	},
-	UPDATE_ELEVATORS(state: State, elevators: Elevator[]) {
+	UPDATE_ELEVATORS(state: State, elevators: Elevator[]): void {
 		state.elevators = [...elevators];
 	},
-	UPDATE_ELEVATOR(state: State, updatedElevator: Elevator) {
+	UPDATE_ELEVATOR(state: State, updatedElevator: Elevator): void {
 		state.elevators.forEach((elevator) => {
 			if (elevator.id == updatedElevator.id) elevator = { ...updatedElevator };
+		});
+	},
+	ADD_NEW_PASSENGER(state: State, { currentFloorNumber, nearestElevator }: { currentFloorNumber: number; nearestElevator: Elevator }): void {
+		const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+		const passanger = new Passenger(uniqueId, currentFloorNumber, nearestElevator.id, state.passengersDestinationFloorCall);
+		passanger.position = { left: nearestElevator.coordinates.x + 10, top: nearestElevator.coordinates.y };
+		state.passengers.push(passanger);
+		state.elevators.forEach((elevator) => {
+			if (elevator.id === nearestElevator.id) elevator.passengersToPickUp.push(passanger);
+		});
+	},
+	PICK_UP_PASSENGER(state: State, nearestElevator: Elevator): void {
+		state.elevators.forEach((elevator: Elevator) => {
+			if (elevator.id == nearestElevator.id) {
+				elevator.passengersToPickUp.forEach((passenger, index) => {
+					if ((passenger.status == STATUS.WAITING && passenger.waitingOnFloorNumber == elevator.currentFloorInMotion) || passenger.waitingOnFloorNumber == elevator.currentFloor) {
+						passenger.status = STATUS.PICKED_UP;
+						elevator.passengersToPickUp.splice(index, 1);
+						elevator.pickedUpPassengers.push(passenger);
+					}
+				});
+			}
 		});
 	},
 };
@@ -111,6 +133,12 @@ const actions = {
 	updateElevators({ commit }: { commit: any }, elevators: Elevator[]) {
 		commit('UPDATE_ELEVATORS', elevators);
 	},
+	addNewPassanger({ commit }: { commit: any }, details: { currentFloorNumber: number; nearestElevator: Elevator }) {
+		commit('ADD_NEW_PASSENGER', details);
+	},
+	pickUpPassenger({ commit }: { commit: any }, nearestElevator: Elevator) {
+		commit('PICK_UP_PASSENGER', nearestElevator);
+	},
 };
 
 // Define the getters
@@ -118,6 +146,7 @@ const getters = {
 	numberOfFloors: (state: State) => state.numberOfFloors,
 	numberOfElevators: (state: State) => state.numberOfElevators,
 	elevators: (state: State) => state.elevators,
+	passengers: (state: State) => state.passengers,
 	floors: (state: State) => state.floors,
 	passengersCurrentFloorCall: (state: State) => state.passengersCurrentFloorCall,
 	passengersDestinationFloorCall: (state: State) => state.passengersDestinationFloorCall,

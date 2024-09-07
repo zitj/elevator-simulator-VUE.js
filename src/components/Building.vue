@@ -5,7 +5,7 @@
 				<div v-for="(floor, index) in numberOfFloors" :key="index" :id="`${index}`" class="floor">
 					<span class="floor-number">{{ floor > 1 ? floor - 1 : 'Ground floor' }}</span>
 					<div class="passangers">
-						<!-- <PassengerComponent></PassengerComponent> -->
+						<PassengerComponent :floorId="index"></PassengerComponent>
 					</div>
 				</div>
 				<div id="elevators">
@@ -35,17 +35,11 @@ import { Elevator } from '../classes/Elevator';
 import { Floor } from '../classes/Floor';
 import { STATUS } from '../constants/status';
 import { SYMBOLS } from '../constants/symbols';
-import { nearestAvailableElevatorFor } from '../services/nearest-elevator-service';
 
 export default defineComponent({
 	name: 'BuildingComponent',
-	// components: { PassengerComponent },
-	data() {
-		return {
-			intervalId: null as number | null,
-			intervals: {} as any,
-		};
-	},
+	components: { PassengerComponent },
+
 	computed: {
 		...mapGetters(['numberOfFloors', 'numberOfElevators', 'elevators', 'floors', 'passengersCurrentFloorCall', 'passengersDestinationFloorCall', 'latestElevatorCall', 'nearestElevator']),
 		...mapState(['nearestElevator']),
@@ -54,11 +48,11 @@ export default defineComponent({
 	methods: {
 		...mapActions(['updateNearestElevator', 'updateNearestElevatorProperties', 'resetElevators', 'updateElevators', 'updateElevator']),
 
-		returnDestinationFloorNumber(elevator: Elevator) {
+		returnDestinationFloorNumber(elevator: Elevator): number | undefined {
 			if (elevator.status === STATUS.READY) return elevator.currentFloorInMotion;
 			if (elevator.status !== STATUS.IDLE) return elevator.destinationFloor;
 		},
-		returnArrowDirection(status: string) {
+		returnArrowDirection(status: string): string | undefined {
 			if (status === STATUS.MOVING_DOWN) return SYMBOLS.ARROW_DOWN;
 			if (status === STATUS.MOVING_UP) return SYMBOLS.ARROW_UP;
 		},
@@ -72,12 +66,13 @@ export default defineComponent({
 			};
 		},
 
-		addDOMElementTo(selector: string, arrayOfObjects: Elevator[] | Floor[]) {
-			const domElements: any = document.querySelector(`#${selector}s`);
+		addDOMElementTo(selector: string, arrayOfObjects: Elevator[] | Floor[]): void {
+			const domElements: HTMLElement = document.querySelector(`#${selector}s`) as HTMLElement;
 			if (domElements) {
-				domElements.childNodes.forEach((domElement: any, index: number) => {
+				domElements.childNodes.forEach((node: Node) => {
+					const domElement = node as HTMLElement;
 					if (domElement !== undefined && domElement.classList && domElement.classList.contains(`${selector}`)) {
-						const object: Elevator | Floor = arrayOfObjects[domElement.id];
+						const object: Elevator | Floor = arrayOfObjects[Number(domElement.id)];
 						if (object) {
 							object.domElement = domElement;
 						}
@@ -88,7 +83,7 @@ export default defineComponent({
 	},
 	watch: {
 		elevators: {
-			handler(newValue) {
+			handler(newValue): void {
 				let elevators = toRaw(newValue);
 				if (elevators && !elevators[0].domElement) {
 					this.$nextTick(() => {
@@ -99,7 +94,7 @@ export default defineComponent({
 			deep: true,
 		},
 		floors: {
-			handler(newValue) {
+			handler(newValue): void {
 				let floors = toRaw(newValue);
 				this.$nextTick(() => {
 					this.addDOMElementTo('floor', floors);

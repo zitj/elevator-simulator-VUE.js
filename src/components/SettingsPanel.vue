@@ -53,7 +53,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, toRaw } from 'vue';
+import { defineComponent } from 'vue';
 import { mapActions, mapGetters } from 'vuex';
 import { Elevator } from '../classes/Elevator';
 import { STATUS } from '../constants/status';
@@ -84,14 +84,17 @@ export default defineComponent({
 			'callElevator',
 			'updateElevator',
 			'updateNearestElevatorProperties',
+			'addNewPassanger',
+			'pickUpPassenger',
 		]),
-		createBuilding() {
+		createBuilding(): void {
 			this.resetElevators();
 			this.updateNumberOfFloors(this.numberOfFloors + 1);
 			this.updateNumberOfElevators(this.numberOfElevators);
 			if (this.numberOfElevators > 0 && this.numberOfFloors > 0) this.buildingCreated = true;
 		},
-		moveElevator(elevator: Elevator) {
+
+		moveElevator(elevator: Elevator): void {
 			if (elevator.status == STATUS.IDLE && elevator.currentFloorInMotion == elevator.destinationFloor) {
 				elevator.currentFloor = elevator.destinationFloor;
 				this.clearElevatorInterval(elevator);
@@ -108,6 +111,7 @@ export default defineComponent({
 					elevator.isPaused = false;
 					clearTimeout(timeout);
 					this.startElevatorInterval(elevator);
+					this.pickUpPassenger(elevator);
 				}, 500);
 			} else {
 				if (elevator.status == STATUS.MOVING_UP) {
@@ -120,23 +124,22 @@ export default defineComponent({
 				}
 			}
 		},
-		clearElevatorInterval(elevator: any) {
+		clearElevatorInterval(elevator: Elevator): void {
 			if (elevator.interval !== null) {
 				clearInterval(elevator.interval);
 				elevator.interval = null;
 				this.updateNearestElevatorProperties({ interval: elevator.interval });
 			}
 		},
-		startElevatorInterval(elevator: any) {
+		startElevatorInterval(elevator: Elevator): void {
 			if (elevator.interval === null || elevator.interval === undefined) {
-				console.log(elevator.interval);
 				elevator.interval = setInterval(() => {
 					this.moveElevator(elevator);
 				}, 700);
 				this.updateNearestElevatorProperties({ interval: elevator.interval });
 			}
 		},
-		handleCallElevator() {
+		handleCallElevator(): void {
 			this.updatePassengersCurrentFloorCall(this.passengersCurrentFloorCall);
 			this.updatePassengersDestinationFloorCall(this.passengersDestinationFloorCall);
 			this.callElevator({
@@ -144,9 +147,17 @@ export default defineComponent({
 				destinationFloor: this.passengersDestinationFloorCall,
 			});
 			const nearestElevator = nearestAvailableElevatorFor(this.passengersCurrentFloorCall, this.passengersDestinationFloorCall, this.elevators);
+			if (nearestElevator) {
+				this.addNewPassanger({ currentFloorNumber: this.passengersCurrentFloorCall, nearestElevator });
+				console.log('Nearest after added passenger to pickup list: ', nearestElevator);
+			}
 			if (nearestElevator.currentFloor === this.passengersCurrentFloorCall) {
 				nearestElevator.status = STATUS.READY;
 				nearestElevator.destinationFloor = this.passengersDestinationFloorCall;
+				let timeout = setTimeout(() => {
+					clearTimeout(timeout);
+					this.pickUpPassenger(nearestElevator);
+				}, 500);
 			} else {
 				nearestElevator.destinationFloor = this.passengersCurrentFloorCall;
 			}
