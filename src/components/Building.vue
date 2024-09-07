@@ -2,7 +2,7 @@
 	<div>
 		<div id="building" v-if="numberOfFloors > 0 && numberOfElevators > 0">
 			<div id="floors">
-				<div v-for="floor in numberOfFloors" :key="floor" class="floor">
+				<div v-for="(floor, index) in numberOfFloors" :key="index" :id="`${index}`" class="floor">
 					<span class="floor-number">{{ floor > 1 ? floor - 1 : 'Ground floor' }}</span>
 					<div class="passangers">
 						<!-- <PassengerComponent></PassengerComponent> -->
@@ -13,12 +13,12 @@
 						v-for="(elevator, index) in elevators"
 						:key="index"
 						class="elevator"
+						:class="{ active: elevator.status !== 'idle', pause: elevator.isPaused }"
 						:style="getElevatorStyle(elevator)"
-						:class="{ active: nearestElevator && nearestElevator.id === elevator.id }"
 						:id="`${index}`"
 					>
-						<span class="arrow"></span>
-						<span class="destination-floor"></span>
+						<span class="arrow" v-html="returnArrowDirection(elevator.status)"></span>
+						<span class="destination-floor" v-html="returnDestinationFloorNumber(elevator)"></span>
 						<span class="passangers-in-elevator"></span>
 					</div>
 				</div>
@@ -29,57 +29,80 @@
 
 <script lang="ts">
 import { defineComponent, toRaw } from 'vue';
-import { mapActions, mapGetters } from 'vuex';
+import { mapActions, mapGetters, mapState } from 'vuex';
 import PassengerComponent from './PassengerComponent.vue';
-import { Elevator } from '../models/Elevator';
-// import { returnNearestAvailableElevatorFor } from '../services/nearest-elevator-service';
+import { Elevator } from '../classes/Elevator';
+import { Floor } from '../classes/Floor';
+import { STATUS } from '../constants/status';
+import { SYMBOLS } from '../constants/symbols';
+import { nearestAvailableElevatorFor } from '../services/nearest-elevator-service';
 
 export default defineComponent({
 	name: 'BuildingComponent',
 	// components: { PassengerComponent },
+	data() {
+		return {
+			intervalId: null as number | null,
+			intervals: {} as any,
+		};
+	},
 	computed: {
-		...mapGetters(['numberOfFloors', 'numberOfElevators', 'elevators', 'passengersCurrentFloorCall', 'passengersDestinationFloorCall', 'latestElevatorCall', 'nearestElevator']),
+		...mapGetters(['numberOfFloors', 'numberOfElevators', 'elevators', 'floors', 'passengersCurrentFloorCall', 'passengersDestinationFloorCall', 'latestElevatorCall', 'nearestElevator']),
+		...mapState(['nearestElevator']),
 	},
 
 	methods: {
-		...mapActions(['updateNearestElevatorProperties']),
-		getElevatorStyle(elevator: Elevator) {
-			console.log(elevator);
-			if (this.nearestElevator && this.nearestElevator.id === elevator.id) {
-				return { left: `${elevator.coordinates.x}px`, top: `${this.nearestElevator.coordinates.y - 51}px`, marginLeft: '20px' };
-			}
-			return { left: `${elevator.coordinates.x}px`, top: `${elevator.coordinates.y}px`, width: '40px', marginLeft: '20px' };
+		...mapActions(['updateNearestElevator', 'updateNearestElevatorProperties', 'resetElevators', 'updateElevators', 'updateElevator']),
+
+		returnDestinationFloorNumber(elevator: Elevator) {
+			if (elevator.status === STATUS.READY) return elevator.currentFloorInMotion;
+			if (elevator.status !== STATUS.IDLE) return elevator.destinationFloor;
 		},
-		updateNearestElevatorDomElement() {
-			const rawNearestElevator = toRaw(this.nearestElevator);
-			if (rawNearestElevator) {
-				// console.log(document.querySelector('#elevators'));
-				// const elevatorsElement = document.querySelector('#elevators');
-				// console.log(elevatorsElement);
-				// const nearestElevatorElement = elevatorsElement.find((el) => el.classList.contains(`elevator-${rawNearestElevator.id}`));
-				// if (nearestElevatorElement) {
-				// 	this.updateNearestElevatorProperties({ domElement: nearestElevatorElement });
-				// }
+		returnArrowDirection(status: string) {
+			if (status === STATUS.MOVING_DOWN) return SYMBOLS.ARROW_DOWN;
+			if (status === STATUS.MOVING_UP) return SYMBOLS.ARROW_UP;
+		},
+		getElevatorStyle(elevator: Elevator) {
+			return {
+				left: `${elevator.coordinates.x}px`,
+				top: `${elevator.coordinates.y}px`,
+				width: '40px',
+				marginLeft: '20px',
+				opacity: elevator.status !== STATUS.IDLE && elevator.status !== STATUS.READY ? 0.75 : 1,
+			};
+		},
+
+		addDOMElementTo(selector: string, arrayOfObjects: Elevator[] | Floor[]) {
+			const domElements: any = document.querySelector(`#${selector}s`);
+			if (domElements) {
+				domElements.childNodes.forEach((domElement: any, index: number) => {
+					if (domElement !== undefined && domElement.classList && domElement.classList.contains(`${selector}`)) {
+						const object: Elevator | Floor = arrayOfObjects[domElement.id];
+						if (object) {
+							object.domElement = domElement;
+						}
+					}
+				});
 			}
 		},
 	},
 	watch: {
-		nearestElevator(newValue) {
-			const rawNearestElevator = toRaw(newValue);
-			// this.updateNearestElevatorDomElement();
-		},
 		elevators: {
 			handler(newValue) {
-				console.log(newValue);
 				let elevators = toRaw(newValue);
+				if (elevators && !elevators[0].domElement) {
+					this.$nextTick(() => {
+						this.addDOMElementTo('elevator', elevators);
+					});
+				}
+			},
+			deep: true,
+		},
+		floors: {
+			handler(newValue) {
+				let floors = toRaw(newValue);
 				this.$nextTick(() => {
-					const elevatorsDOMElement = document.querySelector('#elevators');
-					if (elevatorsDOMElement) {
-						// Code to execute when the element is available
-						elevatorsDOMElement.childNodes.forEach((child: any) => {
-							if (child['id']) console.log(child['id']);
-						});
-					}
+					this.addDOMElementTo('floor', floors);
 				});
 			},
 			deep: true,
@@ -109,7 +132,7 @@ export default defineComponent({
 	height: 50px;
 	background: #bcdeff;
 	background: linear-gradient(to right, #74b9ff, #bcdeff);
-	border-bottom: 1px solid #0984e3;
+	border-top: 1px solid #0984e3;
 	border-left: 1px solid #0984e3;
 	border-right: 1px solid #0984e3;
 	text-align: right;
@@ -123,9 +146,7 @@ export default defineComponent({
 	margin-bottom: 0;
 	border-bottom: none;
 }
-#floors .floor:last-child {
-	border-top: 1px solid #0984e3;
-}
+
 #floors .floor span {
 	font-weight: bold;
 	margin-right: 1em;
@@ -165,7 +186,7 @@ export default defineComponent({
 
 #elevators .elevator {
 	width: 40px;
-	height: 50px;
+	height: 51px;
 	background: rgb(55, 55, 55);
 	background: #2d3436;
 	text-align: center;

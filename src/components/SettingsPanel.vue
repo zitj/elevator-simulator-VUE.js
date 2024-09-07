@@ -30,7 +30,7 @@
 			</div>
 			<button type="submit" class="call-button">Call</button>
 		</form>
-		<section v-if="buildingCreated" id="random-calls-section">
+		<!-- <section v-if="buildingCreated" id="random-calls-section">
 			<div class="content">
 				<h2>Random calls</h2>
 				<p class="warning-message"></p>
@@ -48,13 +48,16 @@
 				</div>
 			</div>
 			<button id="random-calls-button">Start</button>
-		</section>
+		</section> -->
 	</div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, toRaw } from 'vue';
 import { mapActions, mapGetters } from 'vuex';
+import { Elevator } from '../classes/Elevator';
+import { STATUS } from '../constants/status';
+import { nearestAvailableElevatorFor } from '../services/nearest-elevator-service';
 
 export default defineComponent({
 	name: 'SettingsPanel',
@@ -72,12 +75,67 @@ export default defineComponent({
 	},
 
 	methods: {
-		...mapActions(['resetElevators', 'updateNumberOfFloors', 'updateNumberOfElevators', 'updatePassengersCurrentFloorCall', 'updatePassengersDestinationFloorCall', 'callElevator']),
+		...mapActions([
+			'resetElevators',
+			'updateNumberOfFloors',
+			'updateNumberOfElevators',
+			'updatePassengersCurrentFloorCall',
+			'updatePassengersDestinationFloorCall',
+			'callElevator',
+			'updateElevators',
+			'updateElevator',
+			'updateNearestElevator',
+			'updateNearestElevatorProperties',
+		]),
 		createBuilding() {
 			// this.resetElevators();
 			this.updateNumberOfFloors(this.numberOfFloors + 1);
 			this.updateNumberOfElevators(this.numberOfElevators);
 			if (this.numberOfElevators > 0 && this.numberOfFloors > 0) this.buildingCreated = true;
+		},
+		moveElevator(elevator: Elevator) {
+			if (elevator.status == STATUS.IDLE && elevator.currentFloorInMotion == elevator.destinationFloor) {
+				elevator.currentFloor = elevator.destinationFloor;
+				this.clearElevatorInterval(elevator);
+			}
+			if (elevator.status !== STATUS.IDLE && elevator.currentFloorInMotion == elevator.destinationFloor) {
+				elevator.isPaused = true;
+				this.clearElevatorInterval(elevator);
+				elevator.destinationFloor = elevator.passengersDestinationFloor;
+				const distance = elevator.currentFloorInMotion - elevator.destinationFloor;
+				if (distance == 0) elevator.status = STATUS.IDLE;
+				if (distance > 0) elevator.status = STATUS.MOVING_DOWN;
+				if (distance < 0) elevator.status = STATUS.MOVING_UP;
+				let timeout = setTimeout(() => {
+					elevator.isPaused = false;
+					clearTimeout(timeout);
+					this.startElevatorInterval(elevator);
+				}, 500);
+			} else {
+				if (elevator.status == STATUS.MOVING_UP) {
+					++elevator.currentFloorInMotion;
+					elevator.coordinates.y = elevator.coordinates.y - 50 - 1;
+				}
+				if (elevator.status == STATUS.MOVING_DOWN) {
+					--elevator.currentFloorInMotion;
+					elevator.coordinates.y = elevator.coordinates.y + 50 + 1;
+				}
+			}
+		},
+		clearElevatorInterval(elevator: any) {
+			if (elevator.interval !== null) {
+				clearInterval(elevator.interval);
+				elevator.interval = null;
+				this.updateNearestElevatorProperties({ interval: elevator.interval });
+			}
+		},
+		startElevatorInterval(elevator: any) {
+			if (elevator.interval === null || elevator.interval === undefined) {
+				console.log(elevator.interval);
+				elevator.interval = setInterval(() => {
+					this.moveElevator(elevator);
+				}, 700);
+			}
 		},
 		handleCallElevator() {
 			this.updatePassengersCurrentFloorCall(this.passengersCurrentFloorCall);
@@ -86,6 +144,30 @@ export default defineComponent({
 				currentFloor: this.passengersCurrentFloorCall,
 				destinationFloor: this.passengersDestinationFloorCall,
 			});
+			const nearestElevator = nearestAvailableElevatorFor(this.passengersCurrentFloorCall, this.passengersDestinationFloorCall, this.elevators);
+			if (nearestElevator.currentFloor === this.passengersCurrentFloorCall) {
+				nearestElevator.status = STATUS.READY;
+				nearestElevator.destinationFloor = this.passengersDestinationFloorCall;
+			} else {
+				nearestElevator.destinationFloor = this.passengersCurrentFloorCall;
+			}
+			nearestElevator.currentFloorInMotion = nearestElevator.currentFloorInMotion == null ? nearestElevator.currentFloor : nearestElevator.currentFloorInMotion;
+			nearestElevator.passengersCurrentFloor = this.passengersCurrentFloorCall;
+			nearestElevator.passengersDestinationFloor = this.passengersDestinationFloorCall;
+			this.startElevatorInterval(nearestElevator);
+			let distance =
+				nearestElevator.status === STATUS.READY
+					? nearestElevator.passengersDestinationFloor - nearestElevator.currentFloorInMotion
+					: nearestElevator.passengersCurrentFloor - nearestElevator.currentFloorInMotion;
+			if (distance > 0) nearestElevator.status = STATUS.MOVING_UP;
+			if (distance < 0) nearestElevator.status = STATUS.MOVING_DOWN;
+			if (distance === 0) {
+				nearestElevator.status = STATUS.READY;
+				this.clearElevatorInterval(nearestElevator);
+			}
+			console.log(nearestElevator);
+			this.updateElevator(nearestElevator);
+			// this.updateNearestElevator(nearestElevator);
 		},
 	},
 });

@@ -1,7 +1,9 @@
-import { Elevator } from '@/models/Elevator';
-import { Passenger } from '@/models/Passenger';
+import { Elevator } from '@/classes/Elevator';
+import { Passenger } from '@/classes/Passenger';
+import { Floor } from '@/classes/Floor';
 import { createStore, StoreOptions } from 'vuex';
 import { nearestAvailableElevatorFor } from '@/services/nearest-elevator-service';
+import { STATUS } from '@/constants/status';
 
 // Define the state interface
 interface State {
@@ -11,6 +13,7 @@ interface State {
 	passengersDestinationFloorCall: number;
 	elevators: Elevator[];
 	passangers: Passenger[];
+	floors: Floor[];
 	nearestElevator: Elevator | null;
 }
 
@@ -22,15 +25,19 @@ const state: State = {
 	passengersDestinationFloorCall: 0,
 	elevators: [],
 	passangers: [],
+	floors: [],
 	nearestElevator: null,
 };
 
 // Define the mutations
 const mutations = {
-	setNumberOfFloors(state: State, floors: number) {
+	SET_NUMBER_OF_FLOORS(state: State, floors: number) {
 		state.numberOfFloors = floors;
+		state.floors = Array.from({ length: floors }, (_, id) => {
+			return new Floor(id);
+		});
 	},
-	setNumberOfElevators(state: State, elevators: number) {
+	SET_NUMBER_OF_ELEVATORS(state: State, elevators: number) {
 		state.numberOfElevators = elevators;
 		state.elevators = Array.from({ length: elevators }, (_, id) => {
 			const floorHeight = 50;
@@ -40,57 +47,69 @@ const mutations = {
 		});
 	},
 
-	resetAllElevators(state: State) {
+	RESET_ELEVATORS(state: State) {
 		state.elevators = [];
 	},
-
-	setPassangersCurrentFloorCall(state: State, passengersCurrentFloorCall: number) {
+	SET_PASSENGERS_CURRENT_FLOOR_CALL(state: State, passengersCurrentFloorCall: number) {
 		state.passengersCurrentFloorCall = passengersCurrentFloorCall;
 	},
-	setPassengersDestinationFloorCall(state: State, passengersDestinationFloorCall: number) {
+	SET_PASSENGERS_DESTINATION_FLOOR_CALL(state: State, passengersDestinationFloorCall: number) {
 		state.passengersDestinationFloorCall = passengersDestinationFloorCall;
 	},
-	setNearestElevator(state: State, elevator: Elevator) {
+	SET_NEAREST_ELEVATOR(state: State, elevator: Elevator) {
 		state.nearestElevator = elevator;
 	},
 	CALL_ELEVATOR(state: State, payload: { currentFloor: number; destinationFloor: number }) {
-		console.log('Elevator with payload:', payload);
+		return payload;
 	},
 	UPDATE_NEAREST_ELEVATOR(state: State, payload: Partial<Elevator>) {
 		if (state.nearestElevator) {
 			Object.assign(state.nearestElevator, payload);
 		}
 	},
+	UPDATE_ELEVATORS(state: State, elevators: Elevator[]) {
+		state.elevators = [...elevators];
+	},
+	UPDATE_ELEVATOR(state: State, updatedElevator: Elevator) {
+		state.elevators.forEach((elevator) => {
+			if (elevator.id == updatedElevator.id) elevator = { ...updatedElevator };
+		});
+	},
 };
 
 // Define the actions
 const actions = {
 	updateNumberOfFloors({ commit }: { commit: any }, floors: number) {
-		commit('setNumberOfFloors', floors);
+		commit('SET_NUMBER_OF_FLOORS', floors);
 	},
 	updateNumberOfElevators({ commit }: { commit: any }, elevators: number) {
-		commit('setNumberOfElevators', elevators);
+		commit('SET_NUMBER_OF_ELEVATORS', elevators);
 	},
 	updatePassengersCurrentFloorCall({ commit }: { commit: any }, passengersCurrentFloorCall: number) {
-		commit('setPassangersCurrentFloorCall', passengersCurrentFloorCall);
+		commit('SET_PASSENGERS_CURRENT_FLOOR_CALL', passengersCurrentFloorCall);
 	},
 	updatePassengersDestinationFloorCall({ commit }: { commit: any }, passengersDestinationFloorCall: number) {
-		commit('setPassengersDestinationFloorCall', passengersDestinationFloorCall);
+		commit('SET_PASSENGERS_DESTINATION_FLOOR_CALL', passengersDestinationFloorCall);
 	},
 	updateNearestElevator({ commit }: { commit: any }, elevator: Elevator) {
-		commit('setNearestElevator', elevator);
+		commit('SET_NEAREST_ELEVATOR', elevator);
 	},
+	updateElevator({ commit }: { commit: any }, elevator: Elevator) {
+		commit('UPDATE_ELEVATOR', elevator);
+	},
+
 	callElevator({ commit, dispatch }: { commit: any; dispatch: any }, payload: { currentFloor: number; destinationFloor: number }) {
 		commit('CALL_ELEVATOR', payload);
-		const nearestElevator = findNearestElevator(payload.currentFloor, payload.destinationFloor);
-		dispatch('updateNearestElevator', nearestElevator);
 	},
+
 	updateNearestElevatorProperties({ commit }: { commit: any }, payload: Partial<Elevator>) {
 		commit('UPDATE_NEAREST_ELEVATOR', payload);
-		console.log(payload);
 	},
 	resetElevators({ commit }: { commit: any }) {
-		commit('resetAllElevators');
+		commit('RESET_ELEVATORS');
+	},
+	updateElevators({ commit }: { commit: any }, elevators: Elevator[]) {
+		commit('UPDATE_ELEVATORS', elevators);
 	},
 };
 
@@ -99,6 +118,7 @@ const getters = {
 	numberOfFloors: (state: State) => state.numberOfFloors,
 	numberOfElevators: (state: State) => state.numberOfElevators,
 	elevators: (state: State) => state.elevators,
+	floors: (state: State) => state.floors,
 	passengersCurrentFloorCall: (state: State) => state.passengersCurrentFloorCall,
 	passengersDestinationFloorCall: (state: State) => state.passengersDestinationFloorCall,
 	nearestElevator: (state: State) => state.nearestElevator,

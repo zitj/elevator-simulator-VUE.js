@@ -1,4 +1,4 @@
-import { Elevator } from '@/models/Elevator';
+import { Elevator } from '@/classes/Elevator';
 import { STATUS } from '../constants/status';
 
 export function nearestAvailableElevatorFor(passangerCurrentFloor: number, destinationFloor: number, elevators: Elevator[]) {
@@ -11,7 +11,7 @@ export function nearestAvailableElevatorFor(passangerCurrentFloor: number, desti
 		}
 		if (elevators[i].status !== STATUS.IDLE) {
 			if (elevators[i].currentFloorInMotion !== null) {
-				differenceInFloors = Math.abs(+(elevators[i].currentFloorInMotion ?? 0 - passangerCurrentFloor));
+				// differenceInFloors = Math.abs(+(elevators[i].currentFloorInMotion ?? 0 - passangerCurrentFloor));
 				// if (elevators[i].status === STATUS.MOVING_UP || elevators[i].destinationFloor - elevators[i].currentFloorInMotion > 0) {
 				// 	if (Math.abs(destinationFloor - elevators[i].destinationFloor) < Math.abs(elevators[i].currentFloorInMotion - elevators[i].destinationFloor)) {
 				// 		// differenceInFloors = Math.abs(elevators[i].destinationFloor - elevators[i].currentFloorInMotion) + Math.abs(elevators[i].destinationFloor - destinationFloor);
@@ -31,7 +31,7 @@ export function nearestAvailableElevatorFor(passangerCurrentFloor: number, desti
 			status: elevators[i].status,
 			destinationFloor,
 			passangerCurrentFloor,
-			currentFloor: elevators[i].currentFloorInMotion,
+			currentFloor: elevators[i].currentFloorInMotion ? elevators[i].currentFloorInMotion : elevators[i].currentFloor,
 			elevatorCurrentDestinationFloor: elevators[i].destinationFloor,
 		};
 		arrayOfDifferencesInFloors.push(elevator);
@@ -66,5 +66,6 @@ export function nearestAvailableElevatorFor(passangerCurrentFloor: number, desti
 	// 		elevators[nearestElevatorID].domElement = elevatorDOMelement;
 	// 	}
 	// });
+	// console.log('Array of differences in floors', arrayOfDifferencesInFloors);
 	return elevators[nearestElevatorID];
 }
