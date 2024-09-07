@@ -20,7 +20,7 @@
 						<span class="arrow" v-html="returnArrowDirection(elevator.status)"></span>
 						<span class="destination-floor" v-html="returnDestinationFloorNumber(elevator)"></span>
 						<span class="passangers-in-elevator">
-							<span v-for="passenger in elevator.pickedUpPassengers" class="passanger-in-elevator" :key="passenger.id" v-html="`🧑`"></span>
+							<span v-for="passenger in elevator.pickedUpPassengers" class="passanger-in-elevator" :key="passenger.id" v-html="returnPassangerInElevatorSymbol()"></span>
 						</span>
 					</div>
 				</div>
@@ -49,6 +49,10 @@ export default defineComponent({
 
 	methods: {
 		...mapActions(['updateNearestElevator', 'updateNearestElevatorProperties', 'resetElevators', 'updateElevators', 'updateElevator']),
+
+		returnPassangerInElevatorSymbol(): string {
+			return SYMBOLS.HEAD;
+		},
 
 		returnDestinationFloorNumber(elevator: Elevator): number | undefined {
 			if (elevator.status === STATUS.READY) return elevator.currentFloorInMotion;

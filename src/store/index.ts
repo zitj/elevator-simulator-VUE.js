@@ -50,6 +50,16 @@ const mutations = {
 	RESET_ELEVATORS(state: State): void {
 		state.elevators = [];
 	},
+	RESET_STATE(state: State): void {
+		state.numberOfFloors = 0;
+		state.numberOfElevators = 0;
+		state.passengersCurrentFloorCall = 0;
+		state.passengersDestinationFloorCall = 0;
+		state.elevators = [];
+		state.passengers = [];
+		state.floors = [];
+		state.nearestElevator = null;
+	},
 	SET_PASSENGERS_CURRENT_FLOOR_CALL(state: State, passengersCurrentFloorCall: number): void {
 		state.passengersCurrentFloorCall = passengersCurrentFloorCall;
 	},
@@ -103,9 +113,9 @@ const mutations = {
 				elevator.pickedUpPassengers = elevator.pickedUpPassengers.filter((passenger) => {
 					if (passenger.status == STATUS.PICKED_UP && passenger.destinationFloor == elevator.currentFloorInMotion) {
 						passenger.status = STATUS.DROPPED;
-						return false; // remove the passenger from the array
+						return false;
 					} else {
-						return true; // keep the passenger in the array
+						return true;
 					}
 				});
 			}
@@ -154,6 +164,9 @@ const actions = {
 	},
 	dropPassangerOnDestinationFloor({ commit }: { commit: any }, nearestElevator: Elevator) {
 		commit('DROP_PASSANGER', nearestElevator);
+	},
+	resetApp({ commit }: { commit: any }) {
+		commit('RESET_STATE');
 	},
 };
 

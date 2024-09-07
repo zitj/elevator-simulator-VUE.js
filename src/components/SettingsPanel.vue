@@ -87,12 +87,19 @@ export default defineComponent({
 			'addNewPassenger',
 			'pickUpPassenger',
 			'dropPassangerOnDestinationFloor',
+			'resetApp',
 		]),
 		createBuilding(): void {
-			this.resetElevators();
+			this.resetApp();
 			this.updateNumberOfFloors(this.numberOfFloors + 1);
 			this.updateNumberOfElevators(this.numberOfElevators);
-			if (this.numberOfElevators > 0 && this.numberOfFloors > 0) this.buildingCreated = true;
+			if (this.numberOfElevators > 0 && this.numberOfFloors > 0) {
+				this.buildingCreated = true;
+				this.numberOfFloors = 0;
+				this.numberOfElevators = 0;
+				this.passengersCurrentFloorCall = 0;
+				this.passengersDestinationFloorCall = 0;
+			}
 		},
 
 		moveElevator(elevator: Elevator): void {

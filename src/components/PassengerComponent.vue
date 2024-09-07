@@ -2,7 +2,7 @@
 	<div>
 		<div v-for="passenger in passengers" :key="passenger.id">
 			<div v-if="passenger.status == 'waiting' && passenger.waitingOnFloorNumber == floorId" class="passanger" :style="{ left: `${passenger.position.left}px` }">
-				<span class="icon">🧍🏻‍♂️</span>
+				<span class="icon" v-html="passengerSymbol()"></span>
 				<div class="words">{{ `To floor: ${passenger.destinationFloor}` }}</div>
 			</div>
 		</div>
@@ -11,6 +11,7 @@
 
 <script>
 import { mapGetters } from 'vuex';
+import { SYMBOLS } from '../constants/symbols';
 export default {
 	name: 'PassengerComponent',
 	props: {
@@ -18,6 +19,11 @@ export default {
 	},
 	computed: {
 		...mapGetters(['passengers']),
+	},
+	methods: {
+		passengerSymbol() {
+			return SYMBOLS.PASSENGER;
+		},
 	},
 	watch: {},
 };
