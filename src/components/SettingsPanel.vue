@@ -82,13 +82,11 @@ export default defineComponent({
 			'updatePassengersCurrentFloorCall',
 			'updatePassengersDestinationFloorCall',
 			'callElevator',
-			'updateElevators',
 			'updateElevator',
-			'updateNearestElevator',
 			'updateNearestElevatorProperties',
 		]),
 		createBuilding() {
-			// this.resetElevators();
+			this.resetElevators();
 			this.updateNumberOfFloors(this.numberOfFloors + 1);
 			this.updateNumberOfElevators(this.numberOfElevators);
 			if (this.numberOfElevators > 0 && this.numberOfFloors > 0) this.buildingCreated = true;
@@ -135,6 +133,7 @@ export default defineComponent({
 				elevator.interval = setInterval(() => {
 					this.moveElevator(elevator);
 				}, 700);
+				this.updateNearestElevatorProperties({ interval: elevator.interval });
 			}
 		},
 		handleCallElevator() {
@@ -164,16 +163,20 @@ export default defineComponent({
 			if (distance === 0) {
 				nearestElevator.status = STATUS.READY;
 				this.clearElevatorInterval(nearestElevator);
+				nearestElevator.isPaused = true;
+				let timeout = setTimeout(() => {
+					nearestElevator.isPaused = false;
+					clearTimeout(timeout);
+					this.startElevatorInterval(nearestElevator);
+				}, 500);
 			}
 			console.log(nearestElevator);
 			this.updateElevator(nearestElevator);
-			// this.updateNearestElevator(nearestElevator);
 		},
 	},
 });
 </script>
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 .settings-panel {
 	width: 100%;
