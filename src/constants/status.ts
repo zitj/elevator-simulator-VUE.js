@@ -5,4 +5,5 @@ export enum STATUS {
 	MOVING_DOWN = 'MOVING_DOWN',
 	WAITING = 'waiting',
 	PICKED_UP = 'picked-up',
+	DROPPED = 'dropped',
 }

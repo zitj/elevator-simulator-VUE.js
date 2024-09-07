@@ -84,8 +84,9 @@ export default defineComponent({
 			'callElevator',
 			'updateElevator',
 			'updateNearestElevatorProperties',
-			'addNewPassanger',
+			'addNewPassenger',
 			'pickUpPassenger',
+			'dropPassangerOnDestinationFloor',
 		]),
 		createBuilding(): void {
 			this.resetElevators();
@@ -104,7 +105,16 @@ export default defineComponent({
 				this.clearElevatorInterval(elevator);
 				elevator.destinationFloor = elevator.passengersDestinationFloor;
 				const distance = elevator.currentFloorInMotion - elevator.destinationFloor;
-				if (distance == 0) elevator.status = STATUS.IDLE;
+				if (distance == 0) {
+					elevator.isPaused = true;
+					let timeout = setTimeout(() => {
+						elevator.isPaused = false;
+						clearTimeout(timeout);
+						this.dropPassangerOnDestinationFloor(elevator);
+
+						elevator.status = STATUS.IDLE;
+					}, 500);
+				}
 				if (distance > 0) elevator.status = STATUS.MOVING_DOWN;
 				if (distance < 0) elevator.status = STATUS.MOVING_UP;
 				let timeout = setTimeout(() => {
@@ -148,7 +158,7 @@ export default defineComponent({
 			});
 			const nearestElevator = nearestAvailableElevatorFor(this.passengersCurrentFloorCall, this.passengersDestinationFloorCall, this.elevators);
 			if (nearestElevator) {
-				this.addNewPassanger({ currentFloorNumber: this.passengersCurrentFloorCall, nearestElevator });
+				this.addNewPassenger({ currentFloorNumber: this.passengersCurrentFloorCall, nearestElevator });
 				console.log('Nearest after added passenger to pickup list: ', nearestElevator);
 			}
 			if (nearestElevator.currentFloor === this.passengersCurrentFloorCall) {

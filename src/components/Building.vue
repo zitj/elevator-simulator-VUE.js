@@ -19,7 +19,9 @@
 					>
 						<span class="arrow" v-html="returnArrowDirection(elevator.status)"></span>
 						<span class="destination-floor" v-html="returnDestinationFloorNumber(elevator)"></span>
-						<span class="passangers-in-elevator"></span>
+						<span class="passangers-in-elevator">
+							<span v-for="passenger in elevator.pickedUpPassengers" class="passanger-in-elevator" :key="passenger.id" v-html="`🧑`"></span>
+						</span>
 					</div>
 				</div>
 			</div>
@@ -212,5 +214,21 @@ export default defineComponent({
 #elevators .elevator.active-random,
 #elevators .elevator.active-random.pause {
 	background-color: var(--elevator-random-call-color);
+}
+.passangers-in-elevator {
+	position: absolute;
+	opacity: 1;
+	z-index: 9999999;
+	display: flex;
+	left: -8px;
+	bottom: -18px;
+	transform: scale(0.7);
+}
+
+.passanger-in-elevator {
+	margin-left: -12px;
+}
+.passanger-in-elevator:first-child {
+	margin-left: 0;
 }
 </style>

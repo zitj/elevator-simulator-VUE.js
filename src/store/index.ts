@@ -88,7 +88,7 @@ const mutations = {
 		state.elevators.forEach((elevator: Elevator) => {
 			if (elevator.id == nearestElevator.id) {
 				elevator.passengersToPickUp.forEach((passenger, index) => {
-					if ((passenger.status == STATUS.WAITING && passenger.waitingOnFloorNumber == elevator.currentFloorInMotion) || passenger.waitingOnFloorNumber == elevator.currentFloor) {
+					if (passenger.status == STATUS.WAITING && passenger.waitingOnFloorNumber == elevator.currentFloorInMotion) {
 						passenger.status = STATUS.PICKED_UP;
 						elevator.passengersToPickUp.splice(index, 1);
 						elevator.pickedUpPassengers.push(passenger);
@@ -97,9 +97,22 @@ const mutations = {
 			}
 		});
 	},
+	DROP_PASSANGER(state: State, nearestElevator: Elevator): void {
+		state.elevators.forEach((elevator: Elevator) => {
+			if (elevator.id == nearestElevator.id) {
+				elevator.pickedUpPassengers = elevator.pickedUpPassengers.filter((passenger) => {
+					if (passenger.status == STATUS.PICKED_UP && passenger.destinationFloor == elevator.currentFloorInMotion) {
+						passenger.status = STATUS.DROPPED;
+						return false; // remove the passenger from the array
+					} else {
+						return true; // keep the passenger in the array
+					}
+				});
+			}
+		});
+	},
 };
 
-// Define the actions
 const actions = {
 	updateNumberOfFloors({ commit }: { commit: any }, floors: number) {
 		commit('SET_NUMBER_OF_FLOORS', floors);
@@ -133,11 +146,14 @@ const actions = {
 	updateElevators({ commit }: { commit: any }, elevators: Elevator[]) {
 		commit('UPDATE_ELEVATORS', elevators);
 	},
-	addNewPassanger({ commit }: { commit: any }, details: { currentFloorNumber: number; nearestElevator: Elevator }) {
+	addNewPassenger({ commit }: { commit: any }, details: { currentFloorNumber: number; nearestElevator: Elevator }) {
 		commit('ADD_NEW_PASSENGER', details);
 	},
 	pickUpPassenger({ commit }: { commit: any }, nearestElevator: Elevator) {
 		commit('PICK_UP_PASSENGER', nearestElevator);
+	},
+	dropPassangerOnDestinationFloor({ commit }: { commit: any }, nearestElevator: Elevator) {
+		commit('DROP_PASSANGER', nearestElevator);
 	},
 };
 
