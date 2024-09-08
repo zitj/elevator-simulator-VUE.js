@@ -17,15 +17,15 @@ export function nearestAvailableElevatorFor(passangerCurrentFloor: number, desti
 		if (elevators[i].status === STATUS.READY) differenceInFloors = Infinity;
 		if (elevators[i].status === STATUS.IDLE) {
 			differenceInFloors = Math.abs(passangerCurrentFloor - elevators[i].currentFloor) + Math.abs(passangerCurrentFloor - destinationFloor);
-			console.log(`${elevators[i].id} IDLE DIFFERENCE: `, differenceInFloors);
+			// console.log(`${elevators[i].id} IDLE DIFFERENCE: `, differenceInFloors);
 		}
 		if (elevators[i].status === STATUS.MOVING_UP) {
 			differenceInFloors = Math.abs(elevators[i].destinationFloor - passangerCurrentFloor) + Math.abs(destinationFloor - elevators[i].destinationFloor);
-			console.log(`${elevators[i].id} MOVING UP DIFFERENCE: `, differenceInFloors);
+			// console.log(`${elevators[i].id} MOVING UP DIFFERENCE: `, differenceInFloors);
 		}
 		if (elevators[i].status === STATUS.MOVING_DOWN) {
 			differenceInFloors = Math.abs(elevators[i].currentFloorInMotion - passangerCurrentFloor) + Math.abs(elevators[i].currentFloorInMotion - destinationFloor);
-			console.log(`${elevators[i].id} MOVING DOWN DIFFERENCE: `, differenceInFloors);
+			// console.log(`${elevators[i].id} MOVING DOWN DIFFERENCE: `, differenceInFloors);
 		}
 		const difference: ElevatorDifference = {
 			id: elevators[i].id,

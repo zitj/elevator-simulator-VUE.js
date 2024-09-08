@@ -19,6 +19,7 @@ export class Elevator {
 	isPaused: boolean;
 	domElement: HTMLElement | null;
 	interval?: any;
+	isRandomlyCalled: boolean;
 
 	constructor(id: number, coordinates: Coordinates) {
 		this.id = id;
@@ -33,5 +34,6 @@ export class Elevator {
 		this.domElement = null;
 		this.passengersCurrentFloor = 0;
 		this.passengersDestinationFloor = 0;
+		this.isRandomlyCalled = false;
 	}
 }

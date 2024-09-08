@@ -81,7 +81,7 @@ const mutations = {
 			if (elevator.id == updatedElevator.id) elevator = { ...updatedElevator };
 		});
 	},
-	ADD_NEW_PASSENGER(state: State, { currentFloorNumber, nearestElevator }: { currentFloorNumber: number; nearestElevator: Elevator }): void {
+	ADD_NEW_PASSENGER(state: State, { currentFloorNumber, nearestElevator }: { currentFloorNumber: number; destinationFloorNumber: number; nearestElevator: Elevator }): void {
 		const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 		const passanger = new Passenger(uniqueId, currentFloorNumber, nearestElevator.id, state.passengersDestinationFloorCall);
 		passanger.position = { left: nearestElevator.coordinates.x + 10, top: nearestElevator.coordinates.y };
@@ -152,7 +152,7 @@ const actions = {
 	updateElevators({ commit }: { commit: any }, elevators: Elevator[]) {
 		commit('UPDATE_ELEVATORS', elevators);
 	},
-	passengerShowsUp({ commit }: { commit: any }, details: { currentFloorNumber: number; nearestElevator: Elevator }) {
+	passengerShowsUp({ commit }: { commit: any }, details: { currentFloorNumber: number; destinationFloorNumber: number; nearestElevator: Elevator }) {
 		commit('ADD_NEW_PASSENGER', details);
 	},
 	pickUpPassenger({ commit }: { commit: any }, nearestElevator: Elevator) {
@@ -161,7 +161,7 @@ const actions = {
 	dropPassangerOnDestinationFloor({ commit }: { commit: any }, nearestElevator: Elevator) {
 		commit('DROP_PASSANGER', nearestElevator);
 	},
-	resetApp({ commit }: { commit: any }) {
+	resetGeneralState({ commit }: { commit: any }) {
 		commit('RESET_STATE');
 	},
 };

@@ -14,7 +14,7 @@
 						v-for="(elevator, index) in elevators"
 						:key="index"
 						class="elevator"
-						:class="{ active: elevator.status !== 'idle', pause: elevator.isPaused }"
+						:class="{ active: elevator.status !== 'idle', pause: elevator.isPaused, 'active-random': elevator.isRandomlyCalled && elevator.status !== 'idle' }"
 						:style="getElevatorStyle(elevator)"
 						:id="`${index}`"
 					>

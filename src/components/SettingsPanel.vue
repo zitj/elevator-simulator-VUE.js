@@ -30,25 +30,25 @@
 			</div>
 			<button type="submit" class="call-button">Call</button>
 		</form>
-		<!-- <section v-if="buildingCreated" id="random-calls-section">
+		<section v-if="buildingCreated" id="random-calls-section">
 			<div class="content">
 				<h2>Random calls</h2>
 				<p class="warning-message"></p>
 				<div class="timer">
 					<span class="text">Next call starts in:</span>
-					<span class="number">0</span>
+					<span class="number">{{ timerDOM }}</span>
 				</div>
 				<div class="current-floor">
 					<span class="text">Random current floor:</span>
-					<span class="number">-</span>
+					<span class="number">{{ randomPassengerCurrentFloor }}</span>
 				</div>
 				<div class="destination-floor">
 					<span class="text">Random destination floor:</span>
-					<span class="number">-</span>
+					<span class="number">{{ randomPassengerDestinationFloor }}</span>
 				</div>
 			</div>
-			<button id="random-calls-button">Start</button>
-		</section> -->
+			<button id="random-calls-button" @click="startRandomCalls">{{ randomButtonInnerText }}</button>
+		</section>
 	</div>
 </template>
 
@@ -69,8 +69,15 @@ export default defineComponent({
 			passengersCurrentFloorCall: 0,
 			passengersDestinationFloorCall: 0,
 			buildingCreated: false,
+			callElevatorRandomly: false,
+			timerIntervals: [] as number[],
+			timerDOM: 0,
+			randomButtonInnerText: 'Start',
+			randomPassengerCurrentFloor: '-',
+			randomPassengerDestinationFloor: '-',
 		};
 	},
+
 	computed: {
 		...mapGetters(['elevators', 'floors']),
 	},
@@ -88,11 +95,12 @@ export default defineComponent({
 			'passengerShowsUp',
 			'pickUpPassenger',
 			'dropPassangerOnDestinationFloor',
-			'resetApp',
+			'resetGeneralState',
 		]),
 		createBuilding(): void {
 			if (this.numberOfFloors < 1 || this.numberOfElevators < 1) return;
-			this.resetApp();
+			this.resetRandomSection();
+			this.resetGeneralState();
 			this.updateNumberOfFloors(this.numberOfFloors + 1);
 			this.updateNumberOfElevators(this.numberOfElevators);
 			if (this.numberOfElevators > 0 && this.numberOfFloors > 0) {
@@ -169,15 +177,9 @@ export default defineComponent({
 			if (elevator.status === STATUS.READY) this.pickUpPassenger(elevator);
 			let highestDestinationFloor = this.returnHighestFloorOfPassangersToPickUp(elevator.passengersToPickUp);
 			let destinationFloor: number | null = this.returnDestinationFloorToLeave(elevator);
-			// console.log('Highest destination floor', highestDestinationFloor);
-			// console.log('destinationFloor: ', destinationFloor);
 			if (highestDestinationFloor !== null) elevator.destinationFloor = +highestDestinationFloor;
 			if (destinationFloor !== null && highestDestinationFloor == null) elevator.destinationFloor = +destinationFloor;
-			// console.log('elevator.destinationFloor', elevator.destinationFloor);
-
 			const distance = elevator.currentFloorInMotion - elevator.destinationFloor;
-			// const distance = elevator.currentFloorInMotion - elevator.destinationFloor;
-			// console.log('Distance', distance);
 			if (distance == 0 && elevator.passengersToPickUp.length == 0 && elevator.pickedUpPassengers.length == 0) elevator.status = STATUS.IDLE;
 			if (distance == 0 && (elevator.passengersToPickUp.length !== 0 || elevator.pickedUpPassengers.length !== 0)) {
 				this.stopMoving(elevator);
@@ -230,20 +232,79 @@ export default defineComponent({
 			}
 		},
 
+		findNearestElevator(passengerCurrentFloor: number, passengerDestinationFloor: number, isRandomCall?: boolean): void {
+			if (passengerCurrentFloor == passengerDestinationFloor) return;
+			if (passengerCurrentFloor >= this.floors.length || passengerDestinationFloor >= this.floors.length) return;
+			const nearestElevator = nearestAvailableElevatorFor(passengerCurrentFloor, passengerDestinationFloor, this.elevators);
+			if (nearestElevator) {
+				nearestElevator.isRandomlyCalled = isRandomCall ? true : false;
+				this.updatePassengersCurrentFloorCall(passengerCurrentFloor);
+				this.updatePassengersDestinationFloorCall(passengerDestinationFloor);
+				this.passengerShowsUp({ currentFloorNumber: passengerCurrentFloor, destinationFloorNumber: passengerDestinationFloor, nearestElevator });
+				this.goToDesiredFloor(nearestElevator);
+			}
+		},
+
 		handleCallElevator(): void {
-			this.updatePassengersCurrentFloorCall(this.passengersCurrentFloorCall);
-			this.updatePassengersDestinationFloorCall(this.passengersDestinationFloorCall);
+			// this.updatePassengersCurrentFloorCall(this.passengersCurrentFloorCall);
+			// this.updatePassengersDestinationFloorCall(this.passengersDestinationFloorCall);
 			this.callElevator({
 				currentFloor: this.passengersCurrentFloorCall,
 				destinationFloor: this.passengersDestinationFloorCall,
 			});
-			if (this.passengersCurrentFloorCall == this.passengersDestinationFloorCall) return;
-			if (this.passengersCurrentFloorCall >= this.floors.length || this.passengersDestinationFloorCall >= this.floors.length) return;
-			const nearestElevator = nearestAvailableElevatorFor(this.passengersCurrentFloorCall, this.passengersDestinationFloorCall, this.elevators);
-			if (nearestElevator) {
-				this.passengerShowsUp({ currentFloorNumber: this.passengersCurrentFloorCall, nearestElevator });
-				this.goToDesiredFloor(nearestElevator);
+			this.findNearestElevator(this.passengersCurrentFloorCall, this.passengersDestinationFloorCall);
+		},
+		resetRandomSection() {
+			this.callElevatorRandomly = false;
+			this.timerIntervals.forEach((timer) => clearInterval(timer));
+			this.randomPassengerCurrentFloor = '-';
+			this.randomPassengerDestinationFloor = '-';
+			this.timerDOM = 0;
+		},
+		passengersShowUpRandomly() {
+			let time = 5;
+			let timerCounter = setInterval(() => {
+				time--;
+				if (time < 0) time = 4;
+				if (!this.callElevatorRandomly) {
+					time = 0;
+					clearInterval(timerCounter);
+					clearInterval(timer);
+				}
+				this.timerDOM = time;
+			}, 1000);
+
+			this.timerIntervals.push(timerCounter);
+
+			let timer = setInterval(() => {
+				time = 0;
+				if (this.callElevatorRandomly) {
+					let randomCurrentFloor = Math.floor(Math.random() * this.floors.length);
+					let randomDestinationFloor = Math.floor(Math.random() * this.floors.length);
+					while (randomCurrentFloor === randomDestinationFloor) {
+						randomDestinationFloor = Math.floor(Math.random() * this.floors.length);
+					}
+					if (randomCurrentFloor !== randomDestinationFloor) {
+						this.randomPassengerCurrentFloor = randomCurrentFloor.toString();
+						this.randomPassengerDestinationFloor = randomDestinationFloor.toString();
+						this.findNearestElevator(randomCurrentFloor, randomDestinationFloor, true);
+					}
+				} else {
+					clearInterval(timerCounter);
+					clearInterval(timer);
+				}
+			}, 5000);
+			this.timerIntervals.push(timer);
+		},
+		startRandomCalls() {
+			this.callElevatorRandomly = !this.callElevatorRandomly;
+			if (this.callElevatorRandomly) {
+				this.randomButtonInnerText = 'Stop';
+			} else {
+				this.randomButtonInnerText = 'Start';
+				this.resetRandomSection();
 			}
+			this.passengersShowUpRandomly();
 		},
 	},
 });
