@@ -1,44 +1,41 @@
 import { Elevator } from '@/classes/Elevator';
 import { STATUS } from '../constants/status';
 
+interface ElevatorDifference {
+	id: number;
+	differenceInFloors: number;
+	status: string;
+	destinationFloor: number | null;
+	passangerCurrentFloor: number;
+	currentFloor: number;
+}
+
 export function nearestAvailableElevatorFor(passangerCurrentFloor: number, destinationFloor: number, elevators: Elevator[]) {
-	let arrayOfDifferencesInFloors: any[] = [];
+	const arrayOfDifferencesInFloors: ElevatorDifference[] = [];
 	for (let i = 0; i < elevators.length; i++) {
 		let differenceInFloors = 0;
-
-		if (elevators[i].status == STATUS.IDLE) {
-			differenceInFloors = Math.abs(passangerCurrentFloor - elevators[i].currentFloor);
+		if (elevators[i].status === STATUS.READY) differenceInFloors = Infinity;
+		if (elevators[i].status === STATUS.IDLE) {
+			differenceInFloors = Math.abs(passangerCurrentFloor - elevators[i].currentFloor) + Math.abs(passangerCurrentFloor - destinationFloor);
+			console.log(`${elevators[i].id} IDLE DIFFERENCE: `, differenceInFloors);
 		}
-		if (elevators[i].status !== STATUS.IDLE) {
-			if (elevators[i].currentFloorInMotion !== null) {
-				differenceInFloors = Math.abs(+(elevators[i].currentFloorInMotion ?? 0 - passangerCurrentFloor));
-				if (elevators[i].status === STATUS.MOVING_UP || elevators[i].destinationFloor - elevators[i].currentFloorInMotion > 0) {
-					if (Math.abs(destinationFloor - elevators[i].destinationFloor) < Math.abs(elevators[i].currentFloorInMotion - elevators[i].destinationFloor)) {
-						// differenceInFloors = Math.abs(elevators[i].destinationFloor - elevators[i].currentFloorInMotion) + Math.abs(elevators[i].destinationFloor - destinationFloor);
-						// console.log(differenceInFloors);
-					}
-				}
-				if (elevators[i].status === STATUS.MOVING_DOWN || elevators[i].destinationFloor - elevators[i].currentFloorInMotion < 0) {
-					if (passangerCurrentFloor < destinationFloor) {
-						differenceInFloors = Math.abs(+(elevators[i].destinationFloor - elevators[i].currentFloorInMotion)) + Math.abs(destinationFloor);
-					}
-				}
-			}
+		if (elevators[i].status === STATUS.MOVING_UP) {
+			differenceInFloors = Math.abs(elevators[i].destinationFloor - passangerCurrentFloor) + Math.abs(destinationFloor - elevators[i].destinationFloor);
+			console.log(`${elevators[i].id} MOVING UP DIFFERENCE: `, differenceInFloors);
 		}
-		const elevator = {
+		if (elevators[i].status === STATUS.MOVING_DOWN) {
+			differenceInFloors = Math.abs(elevators[i].currentFloorInMotion - passangerCurrentFloor) + Math.abs(elevators[i].currentFloorInMotion - destinationFloor);
+			console.log(`${elevators[i].id} MOVING DOWN DIFFERENCE: `, differenceInFloors);
+		}
+		const difference: ElevatorDifference = {
 			id: elevators[i].id,
 			differenceInFloors,
 			status: elevators[i].status,
 			destinationFloor,
 			passangerCurrentFloor,
 			currentFloor: elevators[i].currentFloorInMotion ? elevators[i].currentFloorInMotion : elevators[i].currentFloor,
-			elevatorCurrentDestinationFloor: elevators[i].destinationFloor,
 		};
-		arrayOfDifferencesInFloors.push(elevator);
-		arrayOfDifferencesInFloors = arrayOfDifferencesInFloors.filter(
-			(elevator) =>
-				!(elevator.status === STATUS.MOVING_DOWN && elevator.currentFloor < passangerCurrentFloor) && !(elevator.status === STATUS.MOVING_UP && elevator.currentFloor > passangerCurrentFloor)
-		);
+		arrayOfDifferencesInFloors.push(difference);
 	}
 
 	arrayOfDifferencesInFloors.sort((a, b) => {
@@ -61,11 +58,6 @@ export function nearestAvailableElevatorFor(passangerCurrentFloor: number, desti
 	});
 
 	const nearestElevatorID = arrayOfDifferencesInFloors[0] ? arrayOfDifferencesInFloors[0].id : null;
-	// elevatorsDOM.childNodes.forEach((elevatorDOMelement) => {
-	// 	if (elevatorDOMelement.dataset.id == nearestElevatorID) {
-	// 		elevators[nearestElevatorID].domElement = elevatorDOMelement;
-	// 	}
-	// });
-	// console.log('Array of differences in floors', arrayOfDifferencesInFloors);
-	return elevators[nearestElevatorID];
+
+	if (nearestElevatorID !== null) return elevators[nearestElevatorID];
 }

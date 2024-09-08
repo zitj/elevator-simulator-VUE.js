@@ -8,6 +8,7 @@
 						<PassengerComponent :floorId="index"></PassengerComponent>
 					</div>
 				</div>
+				<div id="elevators"></div>
 				<div id="elevators">
 					<div
 						v-for="(elevator, index) in elevators"

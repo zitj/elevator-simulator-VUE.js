@@ -167,14 +167,16 @@ export default defineComponent({
 
 		moveElevator(elevator: Elevator): void {
 			if (elevator.status === STATUS.READY) this.pickUpPassenger(elevator);
-
 			let highestDestinationFloor = this.returnHighestFloorOfPassangersToPickUp(elevator.passengersToPickUp);
 			let destinationFloor: number | null = this.returnDestinationFloorToLeave(elevator);
 			// console.log('Highest destination floor', highestDestinationFloor);
 			// console.log('destinationFloor: ', destinationFloor);
-			if (highestDestinationFloor !== null && highestDestinationFloor !== elevator.currentFloorInMotion) elevator.destinationFloor = +highestDestinationFloor;
+			if (highestDestinationFloor !== null) elevator.destinationFloor = +highestDestinationFloor;
 			if (destinationFloor !== null && highestDestinationFloor == null) elevator.destinationFloor = +destinationFloor;
-			const distance = elevator.currentFloorInMotion - (destinationFloor !== null ? destinationFloor : elevator.destinationFloor);
+			// console.log('elevator.destinationFloor', elevator.destinationFloor);
+
+			const distance = elevator.currentFloorInMotion - elevator.destinationFloor;
+			// const distance = elevator.currentFloorInMotion - elevator.destinationFloor;
 			// console.log('Distance', distance);
 			if (distance == 0 && elevator.passengersToPickUp.length == 0 && elevator.pickedUpPassengers.length == 0) elevator.status = STATUS.IDLE;
 			if (distance == 0 && (elevator.passengersToPickUp.length !== 0 || elevator.pickedUpPassengers.length !== 0)) {
