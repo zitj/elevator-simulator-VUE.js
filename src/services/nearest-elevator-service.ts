@@ -11,18 +11,18 @@ export function nearestAvailableElevatorFor(passangerCurrentFloor: number, desti
 		}
 		if (elevators[i].status !== STATUS.IDLE) {
 			if (elevators[i].currentFloorInMotion !== null) {
-				// differenceInFloors = Math.abs(+(elevators[i].currentFloorInMotion ?? 0 - passangerCurrentFloor));
-				// if (elevators[i].status === STATUS.MOVING_UP || elevators[i].destinationFloor - elevators[i].currentFloorInMotion > 0) {
-				// 	if (Math.abs(destinationFloor - elevators[i].destinationFloor) < Math.abs(elevators[i].currentFloorInMotion - elevators[i].destinationFloor)) {
-				// 		// differenceInFloors = Math.abs(elevators[i].destinationFloor - elevators[i].currentFloorInMotion) + Math.abs(elevators[i].destinationFloor - destinationFloor);
-				// 		// console.log(differenceInFloors);
-				// 	}
-				// }
-				// if (elevators[i].status === STATUS.MOVING_DOWN || elevators[i].destinationFloor - elevators[i].currentFloorInMotion < 0) {
-				// 	if (passangerCurrentFloor < destinationFloor) {
-				// 		differenceInFloors = Math.abs(+(elevators[i].destinationFloor - elevators[i].currentFloorInMotion)) + Math.abs(destinationFloor);
-				// 	}
-				// }
+				differenceInFloors = Math.abs(+(elevators[i].currentFloorInMotion ?? 0 - passangerCurrentFloor));
+				if (elevators[i].status === STATUS.MOVING_UP || elevators[i].destinationFloor - elevators[i].currentFloorInMotion > 0) {
+					if (Math.abs(destinationFloor - elevators[i].destinationFloor) < Math.abs(elevators[i].currentFloorInMotion - elevators[i].destinationFloor)) {
+						// differenceInFloors = Math.abs(elevators[i].destinationFloor - elevators[i].currentFloorInMotion) + Math.abs(elevators[i].destinationFloor - destinationFloor);
+						// console.log(differenceInFloors);
+					}
+				}
+				if (elevators[i].status === STATUS.MOVING_DOWN || elevators[i].destinationFloor - elevators[i].currentFloorInMotion < 0) {
+					if (passangerCurrentFloor < destinationFloor) {
+						differenceInFloors = Math.abs(+(elevators[i].destinationFloor - elevators[i].currentFloorInMotion)) + Math.abs(destinationFloor);
+					}
+				}
 			}
 		}
 		const elevator = {

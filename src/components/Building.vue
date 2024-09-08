@@ -17,7 +17,7 @@
 						:style="getElevatorStyle(elevator)"
 						:id="`${index}`"
 					>
-						<span class="arrow" v-html="returnArrowDirection(elevator.status)"></span>
+						<span class="arrow" v-html="returnStatusSymbol(elevator.status)"></span>
 						<span class="destination-floor" v-html="returnDestinationFloorNumber(elevator)"></span>
 						<span class="passangers-in-elevator">
 							<span v-for="passenger in elevator.pickedUpPassengers" class="passanger-in-elevator" :key="passenger.id" v-html="returnPassangerInElevatorSymbol()"></span>
@@ -54,13 +54,15 @@ export default defineComponent({
 			return SYMBOLS.HEAD;
 		},
 
-		returnDestinationFloorNumber(elevator: Elevator): number | undefined {
-			if (elevator.status === STATUS.READY) return elevator.currentFloorInMotion;
-			if (elevator.status !== STATUS.IDLE) return elevator.destinationFloor;
+		returnDestinationFloorNumber(elevator: Elevator): string | undefined {
+			if (elevator.status == STATUS.IDLE) return ``;
+			if (elevator.status === STATUS.READY) return `${elevator.currentFloorInMotion}`;
+			if (elevator.status !== STATUS.IDLE) return `${elevator.destinationFloor}`;
 		},
-		returnArrowDirection(status: string): string | undefined {
+		returnStatusSymbol(status: string): string | undefined {
 			if (status === STATUS.MOVING_DOWN) return SYMBOLS.ARROW_DOWN;
 			if (status === STATUS.MOVING_UP) return SYMBOLS.ARROW_UP;
+			if (status === STATUS.READY) return SYMBOLS.READY;
 		},
 		getElevatorStyle(elevator: Elevator) {
 			return {

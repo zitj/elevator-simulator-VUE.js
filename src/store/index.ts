@@ -2,10 +2,8 @@ import { Elevator } from '@/classes/Elevator';
 import { Passenger } from '@/classes/Passenger';
 import { Floor } from '@/classes/Floor';
 import { createStore, StoreOptions } from 'vuex';
-import { nearestAvailableElevatorFor } from '@/services/nearest-elevator-service';
 import { STATUS } from '@/constants/status';
 
-// Define the state interface
 interface State {
 	numberOfFloors: number;
 	numberOfElevators: number;
@@ -17,7 +15,6 @@ interface State {
 	nearestElevator: Elevator | null;
 }
 
-// Define the initial state
 const state: State = {
 	numberOfFloors: 0,
 	numberOfElevators: 0,
@@ -29,7 +26,6 @@ const state: State = {
 	nearestElevator: null,
 };
 
-// Define the mutations
 const mutations = {
 	SET_NUMBER_OF_FLOORS(state: State, floors: number) {
 		state.numberOfFloors = floors;
@@ -156,7 +152,7 @@ const actions = {
 	updateElevators({ commit }: { commit: any }, elevators: Elevator[]) {
 		commit('UPDATE_ELEVATORS', elevators);
 	},
-	addNewPassenger({ commit }: { commit: any }, details: { currentFloorNumber: number; nearestElevator: Elevator }) {
+	passengerShowsUp({ commit }: { commit: any }, details: { currentFloorNumber: number; nearestElevator: Elevator }) {
 		commit('ADD_NEW_PASSENGER', details);
 	},
 	pickUpPassenger({ commit }: { commit: any }, nearestElevator: Elevator) {
@@ -170,7 +166,6 @@ const actions = {
 	},
 };
 
-// Define the getters
 const getters = {
 	numberOfFloors: (state: State) => state.numberOfFloors,
 	numberOfElevators: (state: State) => state.numberOfElevators,
@@ -193,16 +188,11 @@ const getters = {
 	},
 };
 
-// Create the store
 const storeOptions: StoreOptions<State> = {
 	state,
 	mutations,
 	actions,
 	getters,
 };
-
-function findNearestElevator(passangerCurrentFloor: number, passangerDestinationFloor: number) {
-	return nearestAvailableElevatorFor(passangerCurrentFloor, passangerDestinationFloor, state.elevators);
-}
 
 export const store = createStore<State>(storeOptions);

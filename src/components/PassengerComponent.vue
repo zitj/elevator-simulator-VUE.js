@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<div v-for="passenger in passengers" :key="passenger.id">
-			<div v-if="passenger.status == 'waiting' && passenger.waitingOnFloorNumber == floorId" class="passanger" :style="{ left: `${passenger.position.left}px` }">
+			<div v-if="passenger.status == 'waiting' && passenger.waitingOnFloorNumber == floorId" class="passenger" :style="{ left: `${passenger.position.left}px` }">
 				<span class="icon" v-html="passengerSymbol()"></span>
 				<div class="words">{{ `To floor: ${passenger.destinationFloor}` }}</div>
 			</div>
@@ -30,7 +30,7 @@ export default {
 </script>
 
 <style scoped>
-.passanger {
+.passenger {
 	width: 40px;
 	left: 0;
 	position: absolute;
