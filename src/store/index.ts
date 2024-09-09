@@ -120,6 +120,9 @@ const mutations = {
 			}
 		});
 	},
+	RESET_PASSENGERS(state: State): void {
+		state.passengers = [];
+	},
 };
 
 const actions = {
@@ -166,6 +169,9 @@ const actions = {
 	},
 	resetGeneralState({ commit }: { commit: any }) {
 		commit('RESET_STATE');
+	},
+	resetPassengers({ commit }: { commit: any }) {
+		commit('RESET_PASSENGERS');
 	},
 };
 

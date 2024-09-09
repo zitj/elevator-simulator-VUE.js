@@ -72,6 +72,7 @@ export default defineComponent({
 			buildingCreated: false,
 			callElevatorRandomly: false,
 			timerIntervals: [] as number[],
+			timeouts: [] as number[],
 			timerDOM: 0,
 			randomButtonInnerText: 'Start',
 			randomPassengerCurrentFloor: '-',
@@ -99,6 +100,7 @@ export default defineComponent({
 			'pickUpPassenger',
 			'dropPassangerOnDestinationFloor',
 			'resetGeneralState',
+			'resetPassengers',
 		]),
 		createBuilding(): void {
 			if (this.numberOfFloors < 1 || this.numberOfElevators < 1) {
@@ -131,6 +133,7 @@ export default defineComponent({
 						this.pickUpPassenger(elevator);
 						this.startMoving(elevator);
 					}, this.movementInterval);
+					this.timeouts.push(timeout);
 				}
 			});
 		},
@@ -145,6 +148,7 @@ export default defineComponent({
 						this.dropPassangerOnDestinationFloor(elevator);
 						this.startMoving(elevator);
 					}, this.movementInterval);
+					this.timeouts.push(timeout);
 				}
 			});
 		},
@@ -321,8 +325,11 @@ export default defineComponent({
 		startRandomCalls() {
 			this.callElevatorRandomly = !this.callElevatorRandomly;
 			if (this.callElevatorRandomly) {
+				this.resetPassengers();
 				this.randomButtonInnerText = 'Stop';
 				const numberOfElevators = this.elevators.length;
+				this.timerIntervals.forEach((timer) => clearInterval(timer));
+				this.timeouts.forEach((timeout) => clearTimeout(timeout));
 				this.updateNumberOfElevators(numberOfElevators);
 				this.passengersShowUpRandomly();
 			} else {
