@@ -83,7 +83,6 @@ export function nearestAvailableElevatorFor(passengerCurrentFloor: number, passe
 		}
 		return +a.differenceInFloors - +b.differenceInFloors;
 	});
-	console.log(arrayOfDifferencesInFloors);
 
 	const nearestElevatorID = arrayOfDifferencesInFloors[0] ? arrayOfDifferencesInFloors[0].id : null;
 
