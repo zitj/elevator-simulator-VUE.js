@@ -1,29 +1,27 @@
 <template>
-	<div>
-		<div id="building" v-if="numberOfFloors > 0 && numberOfElevators > 0">
-			<div id="floors">
-				<div v-for="(floor, index) in numberOfFloors" :key="index" :id="`${index}`" class="floor">
-					<span class="floor-number">{{ floor > 1 ? floor - 1 : 'Ground floor' }}</span>
-					<div class="passangers">
-						<PassengerComponent :floorId="index"></PassengerComponent>
-					</div>
+	<div id="building" v-if="numberOfFloors > 0 && numberOfElevators > 0">
+		<div id="floors">
+			<div v-for="(floor, index) in numberOfFloors" :key="index" :id="`${index}`" class="floor">
+				<span class="floor-number">{{ floor > 1 ? floor - 1 : 'Ground floor' }}</span>
+				<div class="passangers">
+					<PassengerComponent :floorId="index"></PassengerComponent>
 				</div>
-				<div id="elevators"></div>
-				<div id="elevators">
-					<div
-						v-for="(elevator, index) in elevators"
-						:key="index"
-						class="elevator"
-						:class="{ active: elevator.status !== 'idle', pause: elevator.isPaused, 'active-random': elevator.isRandomlyCalled && elevator.status !== 'idle' }"
-						:style="getElevatorStyle(elevator)"
-						:id="`${index}`"
-					>
-						<span class="arrow" v-html="returnStatusSymbol(elevator.status)"></span>
-						<span class="destination-floor" v-html="returnDestinationFloorNumber(elevator)"></span>
-						<span class="passangers-in-elevator">
-							<span v-for="passenger in elevator.pickedUpPassengers" class="passanger-in-elevator" :key="passenger.id" v-html="returnPassangerInElevatorSymbol()"></span>
-						</span>
-					</div>
+			</div>
+			<div id="elevators"></div>
+			<div id="elevators">
+				<div
+					v-for="(elevator, index) in elevators"
+					:key="index"
+					class="elevator"
+					:class="{ active: elevator.status !== 'idle', pause: elevator.isPaused, 'active-random': elevator.isRandomlyCalled && elevator.status !== 'idle' }"
+					:style="getElevatorStyle(elevator)"
+					:id="`${index}`"
+				>
+					<span class="arrow" v-html="returnStatusSymbol(elevator.status)"></span>
+					<span class="destination-floor" v-html="returnDestinationFloorNumber(elevator)"></span>
+					<span class="passangers-in-elevator">
+						<span v-for="passenger in elevator.pickedUpPassengers" class="passanger-in-elevator" :key="passenger.id" v-html="returnPassangerInElevatorSymbol()"></span>
+					</span>
 				</div>
 			</div>
 		</div>

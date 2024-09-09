@@ -3,7 +3,7 @@
 		<form id="create-building-form" @submit.prevent="createBuilding">
 			<div class="content">
 				<h2>Create Building</h2>
-				<p class="warning-message"></p>
+				<p class="warning-message">{{ warningMessageCreate }}</p>
 				<div class="input-field">
 					<label for="number-of-floors">Number of floors:</label>
 					<input v-model.number="numberOfFloors" id="generate-number-of-floors-input" type="number" name="number-of-floors" min="0" required />
@@ -18,7 +18,7 @@
 		<form v-if="buildingCreated" id="call-elevator-form" @submit.prevent="handleCallElevator">
 			<div class="content">
 				<h2>Call Elevator</h2>
-				<p class="warning-message"></p>
+				<p class="warning-message">{{ warningMessageCall }}</p>
 				<div class="input-field">
 					<label for="current-floor">From current floor:</label>
 					<input v-model.number="passengersCurrentFloorCall" id="current-floor-input" type="number" name="current-floor" min="0" required />
@@ -56,10 +56,10 @@
 import { defineComponent } from 'vue';
 import { mapActions, mapGetters } from 'vuex';
 import { Elevator } from '../classes/Elevator';
-import { Floor } from '../classes/Floor';
 import { Passenger } from '../classes/Passenger';
 import { STATUS } from '../constants/status';
 import { nearestAvailableElevatorFor } from '../services/nearest-elevator-service';
+import { MESSAGES } from '../constants/messages';
 
 export default defineComponent({
 	name: 'SettingsPanel',
@@ -77,9 +77,10 @@ export default defineComponent({
 			randomPassengerCurrentFloor: '-',
 			randomPassengerDestinationFloor: '-',
 			movementInterval: 700,
+			warningMessageCreate: `${MESSAGES.BETTER_USER_EXPERIENCE}`,
+			warningMessageCall: '',
 		};
 	},
-
 	computed: {
 		...mapGetters(['elevators', 'floors']),
 	},
@@ -100,12 +101,16 @@ export default defineComponent({
 			'resetGeneralState',
 		]),
 		createBuilding(): void {
-			if (this.numberOfFloors < 1 || this.numberOfElevators < 1) return;
+			if (this.numberOfFloors < 1 || this.numberOfElevators < 1) {
+				this.warningMessageCreate = MESSAGES.GREATER_THAN_ZERO;
+				return;
+			}
 			this.resetRandomSection();
 			this.resetGeneralState();
 			this.updateNumberOfFloors(this.numberOfFloors + 1);
 			this.updateNumberOfElevators(this.numberOfElevators);
 			if (this.numberOfElevators > 0 && this.numberOfFloors > 0) {
+				this.warningMessageCreate = '';
 				this.buildingCreated = true;
 				this.numberOfFloors = 0;
 				this.numberOfElevators = 0;
@@ -181,12 +186,10 @@ export default defineComponent({
 
 		moveElevator(elevator: Elevator): void {
 			if (elevator.status === STATUS.READY) this.pickUpPassenger(elevator);
-			// const finalDestination: number | undefined = elevator.passengerThatCalledFirst?.destinationFloor;
 			let highestDestinationFloor = this.returnHighestFloorOfPassangersToPickUp(elevator.passengersToPickUp);
 			let destinationFloor: number | null = this.returnDestinationFloorToLeave(elevator);
 			if (highestDestinationFloor !== null) elevator.destinationFloor = Math.abs(highestDestinationFloor);
 			if (destinationFloor !== null && highestDestinationFloor == null) elevator.destinationFloor = Math.abs(destinationFloor);
-			// if (finalDestination !== null && finalDestination !== undefined && highestDestinationFloor == null) elevator.destinationFloor = +finalDestination;
 			const distance = elevator.currentFloorInMotion - elevator.destinationFloor;
 			if (distance == 0 && elevator.passengersToPickUp.length == 0 && elevator.pickedUpPassengers.length == 0) elevator.status = STATUS.IDLE;
 			if (distance == 0 && (elevator.passengersToPickUp.length !== 0 || elevator.pickedUpPassengers.length !== 0)) {
@@ -203,10 +206,7 @@ export default defineComponent({
 				elevator.passengerThatCalledFirst = null;
 				this.stopMoving(elevator);
 			}
-			// if (elevator.status !== STATUS.IDLE && elevator.currentFloorInMotion == elevator.destinationFloor) {
-			// 	elevator.destinationFloor = elevator.passengersDestinationFloor;
-			// } else {
-			// }
+
 			if (elevator.currentFloorInMotion !== elevator.destinationFloor) {
 				if (elevator.status === STATUS.MOVING_UP || elevator.status === STATUS.MOVING_DOWN) this.moveToNextFloor(elevator);
 			}
@@ -245,10 +245,18 @@ export default defineComponent({
 		},
 
 		findNearestElevator(passengerCurrentFloor: number, passengerDestinationFloor: number, isRandomCall?: boolean): void {
-			if (passengerCurrentFloor == passengerDestinationFloor) return;
-			if (passengerCurrentFloor >= this.floors.length || passengerDestinationFloor >= this.floors.length) return;
+			if (passengerCurrentFloor == passengerDestinationFloor) {
+				this.warningMessageCall = MESSAGES.SAME_FLOOR;
+				return;
+			}
+			if (passengerCurrentFloor >= this.floors.length || passengerDestinationFloor >= this.floors.length) {
+				this.warningMessageCall = MESSAGES.MAX_FLOOR_NUMBER.replace('{0}', this.floors.length);
+				return;
+			}
+
 			const nearestElevator = nearestAvailableElevatorFor(passengerCurrentFloor, passengerDestinationFloor, this.elevators);
 			if (nearestElevator) {
+				this.warningMessageCall = '';
 				nearestElevator.isRandomlyCalled = isRandomCall ? true : false;
 				this.updatePassengersCurrentFloorCall(passengerCurrentFloor);
 				this.updatePassengersDestinationFloorCall(passengerDestinationFloor);
@@ -268,7 +276,7 @@ export default defineComponent({
 		resetRandomSection() {
 			this.callElevatorRandomly = false;
 			this.timerIntervals.forEach((timer) => clearInterval(timer));
-			this.elevators.forEach((elevator: Elevator) => clearInterval(elevator.interval));
+			// this.elevators.forEach((elevator: Elevator) => clearInterval(elevator.interval));
 			this.randomPassengerCurrentFloor = '-';
 			this.randomPassengerDestinationFloor = '-';
 			this.randomButtonInnerText = 'Start';
@@ -313,10 +321,10 @@ export default defineComponent({
 			this.callElevatorRandomly = !this.callElevatorRandomly;
 			if (this.callElevatorRandomly) {
 				this.randomButtonInnerText = 'Stop';
+				this.passengersShowUpRandomly();
 			} else {
 				this.resetRandomSection();
 			}
-			this.passengersShowUpRandomly();
 		},
 	},
 });
