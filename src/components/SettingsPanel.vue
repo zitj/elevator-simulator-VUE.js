@@ -322,6 +322,8 @@ export default defineComponent({
 			this.callElevatorRandomly = !this.callElevatorRandomly;
 			if (this.callElevatorRandomly) {
 				this.randomButtonInnerText = 'Stop';
+				const numberOfElevators = this.elevators.length;
+				this.updateNumberOfElevators(numberOfElevators);
 				this.passengersShowUpRandomly();
 			} else {
 				this.resetRandomSection();
