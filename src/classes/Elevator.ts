@@ -18,8 +18,9 @@ export class Elevator {
 	pickedUpPassengers: Passenger[];
 	isPaused: boolean;
 	domElement: HTMLElement | null;
-	interval?: any;
 	isRandomlyCalled: boolean;
+	passengerThatCalledFirst: Passenger | null;
+	interval?: any;
 
 	constructor(id: number, coordinates: Coordinates) {
 		this.id = id;
@@ -35,5 +36,6 @@ export class Elevator {
 		this.passengersCurrentFloor = 0;
 		this.passengersDestinationFloor = 0;
 		this.isRandomlyCalled = false;
+		this.passengerThatCalledFirst = null;
 	}
 }

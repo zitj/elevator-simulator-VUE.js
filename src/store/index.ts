@@ -87,7 +87,10 @@ const mutations = {
 		passanger.position = { left: nearestElevator.coordinates.x + 10, top: nearestElevator.coordinates.y };
 		state.passengers.push(passanger);
 		state.elevators.forEach((elevator) => {
-			if (elevator.id === nearestElevator.id) elevator.passengersToPickUp.push(passanger);
+			if (elevator.id === nearestElevator.id) {
+				if (elevator.passengerThatCalledFirst === null) elevator.passengerThatCalledFirst = passanger;
+				elevator.passengersToPickUp.push(passanger);
+			}
 		});
 	},
 	PICK_UP_PASSENGER(state: State, nearestElevator: Elevator): void {

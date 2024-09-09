@@ -75,6 +75,7 @@ export default defineComponent({
 			randomButtonInnerText: 'Start',
 			randomPassengerCurrentFloor: '-',
 			randomPassengerDestinationFloor: '-',
+			movementInterval: 700,
 		};
 	},
 
@@ -118,11 +119,11 @@ export default defineComponent({
 				if (passanger.waitingOnFloorNumber == currentFloor) {
 					this.stopMoving(elevator);
 					let timeout = setTimeout(() => {
-						elevator.status = STATUS.READY;
 						clearTimeout(timeout);
+						elevator.status = STATUS.READY;
 						this.pickUpPassenger(elevator);
 						this.startMoving(elevator);
-					}, 800);
+					}, this.movementInterval);
 				}
 			});
 		},
@@ -132,20 +133,20 @@ export default defineComponent({
 				if (passenger.destinationFloor == elevator.currentFloorInMotion) {
 					this.stopMoving(elevator);
 					let timeout = setTimeout(() => {
-						elevator.status = STATUS.READY;
 						clearTimeout(timeout);
+						elevator.status = STATUS.READY;
 						this.dropPassangerOnDestinationFloor(elevator);
 						this.startMoving(elevator);
-					}, 800);
+					}, this.movementInterval);
 				}
 			});
 		},
 		moveToNextFloor(elevator: Elevator): void {
-			if (elevator.status === STATUS.MOVING_UP) {
+			if (elevator.status === STATUS.MOVING_UP && elevator.currentFloorInMotion < this.floors.length - 1) {
 				++elevator.currentFloorInMotion;
 				elevator.coordinates.y = elevator.coordinates.y - 50 - 1;
 			}
-			if (elevator.status === STATUS.MOVING_DOWN) {
+			if (elevator.status === STATUS.MOVING_DOWN && elevator.currentFloorInMotion > 0) {
 				--elevator.currentFloorInMotion;
 				elevator.coordinates.y = elevator.coordinates.y + 50 + 1;
 			}
@@ -162,8 +163,9 @@ export default defineComponent({
 		},
 		returnDestinationFloorToLeave(elevator: Elevator) {
 			const passangers = elevator.pickedUpPassengers;
+			const passangersWaiting: boolean = elevator.passengersToPickUp && elevator.passengersToPickUp.length > 0 ? true : false;
 
-			if (passangers && passangers.length > 0) {
+			if (passangers && passangers.length > 0 && !passangersWaiting) {
 				if (elevator.status === STATUS.MOVING_DOWN) return passangers.sort((a, b) => a.destinationFloor - b.destinationFloor)[0].destinationFloor;
 				if (elevator.status === STATUS.MOVING_UP) return passangers.sort((a, b) => b.destinationFloor - a.destinationFloor)[0].destinationFloor;
 				if (elevator.status === STATUS.READY) {
@@ -175,10 +177,12 @@ export default defineComponent({
 
 		moveElevator(elevator: Elevator): void {
 			if (elevator.status === STATUS.READY) this.pickUpPassenger(elevator);
+			// const finalDestination: number | undefined = elevator.passengerThatCalledFirst?.destinationFloor;
 			let highestDestinationFloor = this.returnHighestFloorOfPassangersToPickUp(elevator.passengersToPickUp);
 			let destinationFloor: number | null = this.returnDestinationFloorToLeave(elevator);
-			if (highestDestinationFloor !== null) elevator.destinationFloor = +highestDestinationFloor;
-			if (destinationFloor !== null && highestDestinationFloor == null) elevator.destinationFloor = +destinationFloor;
+			if (highestDestinationFloor !== null) elevator.destinationFloor = Math.abs(highestDestinationFloor);
+			if (destinationFloor !== null && highestDestinationFloor == null) elevator.destinationFloor = Math.abs(destinationFloor);
+			// if (finalDestination !== null && finalDestination !== undefined && highestDestinationFloor == null) elevator.destinationFloor = +finalDestination;
 			const distance = elevator.currentFloorInMotion - elevator.destinationFloor;
 			if (distance == 0 && elevator.passengersToPickUp.length == 0 && elevator.pickedUpPassengers.length == 0) elevator.status = STATUS.IDLE;
 			if (distance == 0 && (elevator.passengersToPickUp.length !== 0 || elevator.pickedUpPassengers.length !== 0)) {
@@ -186,16 +190,20 @@ export default defineComponent({
 				elevator.status = STATUS.READY;
 				this.startMoving(elevator);
 			}
+
 			if (distance > 0) elevator.status = STATUS.MOVING_DOWN;
 			if (distance < 0) elevator.status = STATUS.MOVING_UP;
 
 			if (elevator.status == STATUS.IDLE && elevator.currentFloorInMotion == elevator.destinationFloor) {
 				elevator.currentFloor = elevator.destinationFloor;
+				elevator.passengerThatCalledFirst = null;
 				this.stopMoving(elevator);
 			}
-			if (elevator.status !== STATUS.IDLE && elevator.currentFloorInMotion == elevator.destinationFloor) {
-				elevator.destinationFloor = elevator.passengersDestinationFloor;
-			} else {
+			// if (elevator.status !== STATUS.IDLE && elevator.currentFloorInMotion == elevator.destinationFloor) {
+			// 	elevator.destinationFloor = elevator.passengersDestinationFloor;
+			// } else {
+			// }
+			if (elevator.currentFloorInMotion !== elevator.destinationFloor) {
 				if (elevator.status === STATUS.MOVING_UP || elevator.status === STATUS.MOVING_DOWN) this.moveToNextFloor(elevator);
 			}
 		},
@@ -212,7 +220,7 @@ export default defineComponent({
 			if (elevator.interval === null || elevator.interval === undefined) {
 				elevator.interval = setInterval(() => {
 					this.moveElevator(elevator);
-				}, 700);
+				}, this.movementInterval);
 				this.updateNearestElevatorProperties({ interval: elevator.interval });
 			}
 		},
@@ -246,19 +254,20 @@ export default defineComponent({
 		},
 
 		handleCallElevator(): void {
-			// this.updatePassengersCurrentFloorCall(this.passengersCurrentFloorCall);
-			// this.updatePassengersDestinationFloorCall(this.passengersDestinationFloorCall);
 			this.callElevator({
 				currentFloor: this.passengersCurrentFloorCall,
 				destinationFloor: this.passengersDestinationFloorCall,
 			});
 			this.findNearestElevator(this.passengersCurrentFloorCall, this.passengersDestinationFloorCall);
 		},
+
 		resetRandomSection() {
 			this.callElevatorRandomly = false;
 			this.timerIntervals.forEach((timer) => clearInterval(timer));
+			this.elevators.forEach((elevator: Elevator) => clearInterval(elevator.interval));
 			this.randomPassengerCurrentFloor = '-';
 			this.randomPassengerDestinationFloor = '-';
+			this.randomButtonInnerText = 'Start';
 			this.timerDOM = 0;
 		},
 		passengersShowUpRandomly() {
@@ -301,7 +310,6 @@ export default defineComponent({
 			if (this.callElevatorRandomly) {
 				this.randomButtonInnerText = 'Stop';
 			} else {
-				this.randomButtonInnerText = 'Start';
 				this.resetRandomSection();
 			}
 			this.passengersShowUpRandomly();
