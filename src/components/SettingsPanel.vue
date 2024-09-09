@@ -325,12 +325,12 @@ export default defineComponent({
 		startRandomCalls() {
 			this.callElevatorRandomly = !this.callElevatorRandomly;
 			if (this.callElevatorRandomly) {
-				this.resetPassengers();
+				// this.resetPassengers();
+				// this.timerIntervals.forEach((timer) => clearInterval(timer));
+				// this.timeouts.forEach((timeout) => clearTimeout(timeout));
 				this.randomButtonInnerText = 'Stop';
-				const numberOfElevators = this.elevators.length;
-				this.timerIntervals.forEach((timer) => clearInterval(timer));
-				this.timeouts.forEach((timeout) => clearTimeout(timeout));
-				this.updateNumberOfElevators(numberOfElevators);
+				// const numberOfElevators = this.elevators.length;
+				// this.updateNumberOfElevators(numberOfElevators);
 				this.passengersShowUpRandomly();
 			} else {
 				this.resetRandomSection();

@@ -35,6 +35,7 @@ const mutations = {
 	},
 	SET_NUMBER_OF_ELEVATORS(state: State, elevators: number) {
 		state.numberOfElevators = elevators;
+		state.elevators = [];
 		state.elevators = Array.from({ length: elevators }, (_, id) => {
 			const floorHeight = 50;
 			const x = id * 60;
