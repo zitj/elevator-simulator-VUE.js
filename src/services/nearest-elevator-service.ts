@@ -19,18 +19,20 @@ export function nearestAvailableElevatorFor(passengerCurrentFloor: number, passe
 		const passengerThatCalledFirst: Passenger | null = elevators[i].passengerThatCalledFirst;
 		const finalDestination = passengerThatCalledFirst?.destinationFloor;
 		const status = elevators[i].status;
-		const elevatorsCurrentFloor = elevators[i].currentFloorInMotion !== null || elevators[i].currentFloorInMotion !== undefined ? elevators[i].currentFloorInMotion : elevators[i].currentFloor;
+		const elevatorsCurrentFloor = elevators[i].currentFloorInMotion !== null && elevators[i].currentFloorInMotion !== undefined ? elevators[i].currentFloorInMotion : elevators[i].currentFloor;
 		const elevatorsDestinationFloor = elevators[i].destinationFloor;
-
 		if (status === STATUS.READY) {
 			differenceInFloors = Infinity;
-			if (finalDestination && finalDestination !== elevatorsCurrentFloor) {
+			if (finalDestination !== null && finalDestination !== undefined && finalDestination !== elevatorsCurrentFloor) {
 				if (passengerCurrentFloor <= elevatorsCurrentFloor && passengerDestinationFloor >= finalDestination) {
 					differenceInFloors = Math.abs(elevatorsCurrentFloor - passengerDestinationFloor);
 				}
 			}
-			if (finalDestination && finalDestination == elevatorsCurrentFloor) {
-				differenceInFloors = Math.abs(elevatorsCurrentFloor - passengerCurrentFloor);
+			if (finalDestination !== null && finalDestination !== undefined && finalDestination == elevatorsCurrentFloor) {
+				differenceInFloors = Math.abs(elevatorsCurrentFloor - passengerCurrentFloor) + Math.abs(passengerCurrentFloor - passengerDestinationFloor);
+			}
+			if (finalDestination !== null && finalDestination !== undefined && passengerCurrentFloor < finalDestination && passengerDestinationFloor == finalDestination) {
+				differenceInFloors = Math.abs(elevatorsCurrentFloor - passengerCurrentFloor) + Math.abs(passengerCurrentFloor - finalDestination);
 			}
 		}
 		if (status === STATUS.IDLE) {
@@ -43,14 +45,15 @@ export function nearestAvailableElevatorFor(passengerCurrentFloor: number, passe
 			}
 		}
 		if (status === STATUS.MOVING_DOWN) {
-			// differenceInFloors = Math.abs(elevatorsCurrentFloor - passengerCurrentFloor) + Math.abs(passengerCurrentFloor - passengerDestinationFloor);
-			if (elevatorsCurrentFloor >= passengerCurrentFloor && finalDestination && passengerDestinationFloor <= finalDestination) {
-				differenceInFloors = Math.abs(elevatorsCurrentFloor - passengerDestinationFloor);
-			} else {
-				differenceInFloors = Infinity;
+			differenceInFloors = Infinity;
+			if (elevatorsCurrentFloor >= passengerCurrentFloor && finalDestination !== null && finalDestination !== undefined && passengerDestinationFloor <= finalDestination) {
+				differenceInFloors = Math.abs(elevatorsCurrentFloor - passengerCurrentFloor) + Math.abs(passengerCurrentFloor - passengerDestinationFloor);
+			}
+
+			if (finalDestination !== null && finalDestination !== undefined && passengerDestinationFloor >= finalDestination && passengerCurrentFloor <= elevatorsCurrentFloor) {
+				differenceInFloors = Math.abs(elevatorsCurrentFloor - passengerCurrentFloor) + Math.abs(passengerCurrentFloor - finalDestination);
 			}
 		}
-
 		const difference: ElevatorDifference = {
 			id: elevators[i].id,
 			differenceInFloors,
@@ -80,6 +83,7 @@ export function nearestAvailableElevatorFor(passengerCurrentFloor: number, passe
 		}
 		return +a.differenceInFloors - +b.differenceInFloors;
 	});
+	console.log(arrayOfDifferencesInFloors);
 
 	const nearestElevatorID = arrayOfDifferencesInFloors[0] ? arrayOfDifferencesInFloors[0].id : null;
 

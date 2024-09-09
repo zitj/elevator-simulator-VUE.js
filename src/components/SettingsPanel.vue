@@ -111,6 +111,7 @@ export default defineComponent({
 			this.updateNumberOfElevators(this.numberOfElevators);
 			if (this.numberOfElevators > 0 && this.numberOfFloors > 0) {
 				this.warningMessageCreate = '';
+				this.warningMessageCall = '';
 				this.buildingCreated = true;
 				this.numberOfFloors = 0;
 				this.numberOfElevators = 0;
