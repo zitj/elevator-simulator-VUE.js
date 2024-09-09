@@ -8,7 +8,7 @@ interface ElevatorDifference {
 	status: string;
 	passengerDestinationFloor: number | null;
 	passengerCurrentFloor: number;
-	currentFloor: number;
+	elevatorsCurrentFloor: number;
 }
 
 export function nearestAvailableElevatorFor(passengerCurrentFloor: number, passengerDestinationFloor: number, elevators: Elevator[]) {
@@ -19,27 +19,36 @@ export function nearestAvailableElevatorFor(passengerCurrentFloor: number, passe
 		const passengerThatCalledFirst: Passenger | null = elevators[i].passengerThatCalledFirst;
 		const finalDestination = passengerThatCalledFirst?.destinationFloor;
 		const status = elevators[i].status;
-		const elevatorsCurrentFloor = elevators[i].currentFloorInMotion ? elevators[i].currentFloorInMotion : elevators[i].currentFloor;
+		const elevatorsCurrentFloor = elevators[i].currentFloorInMotion !== null || elevators[i].currentFloorInMotion !== undefined ? elevators[i].currentFloorInMotion : elevators[i].currentFloor;
 		const elevatorsDestinationFloor = elevators[i].destinationFloor;
 
 		if (status === STATUS.READY) {
-			if (finalDestination) {
+			differenceInFloors = Infinity;
+			if (finalDestination && finalDestination !== elevatorsCurrentFloor) {
 				if (passengerCurrentFloor <= elevatorsCurrentFloor && passengerDestinationFloor >= finalDestination) {
 					differenceInFloors = Math.abs(elevatorsCurrentFloor - passengerDestinationFloor);
 				}
 			}
+			if (finalDestination && finalDestination == elevatorsCurrentFloor) {
+				differenceInFloors = Math.abs(elevatorsCurrentFloor - passengerCurrentFloor);
+			}
 		}
 		if (status === STATUS.IDLE) {
 			differenceInFloors = Math.abs(passengerCurrentFloor - elevatorsCurrentFloor) + Math.abs(passengerCurrentFloor - passengerDestinationFloor);
-			// console.log(`${elevators[i].id} IDLE DIFFERENCE: `, differenceInFloors);
 		}
 		if (status === STATUS.MOVING_UP) {
 			differenceInFloors = Math.abs(elevatorsDestinationFloor - passengerCurrentFloor) + Math.abs(passengerDestinationFloor - elevatorsDestinationFloor);
-			// console.log(`${elevators[i].id} MOVING UP DIFFERENCE: `, differenceInFloors);
+			if (passengerThatCalledFirst && passengerThatCalledFirst.waitingOnFloorNumber < passengerCurrentFloor && finalDestination && elevatorsCurrentFloor - passengerCurrentFloor > 0) {
+				differenceInFloors = Infinity;
+			}
 		}
 		if (status === STATUS.MOVING_DOWN) {
-			differenceInFloors = Math.abs(elevatorsCurrentFloor - passengerCurrentFloor) + Math.abs(elevatorsCurrentFloor - passengerDestinationFloor);
-			// console.log(`${elevators[i].id} MOVING DOWN DIFFERENCE: `, differenceInFloors);
+			// differenceInFloors = Math.abs(elevatorsCurrentFloor - passengerCurrentFloor) + Math.abs(passengerCurrentFloor - passengerDestinationFloor);
+			if (elevatorsCurrentFloor >= passengerCurrentFloor && finalDestination && passengerDestinationFloor <= finalDestination) {
+				differenceInFloors = Math.abs(elevatorsCurrentFloor - passengerDestinationFloor);
+			} else {
+				differenceInFloors = Infinity;
+			}
 		}
 
 		const difference: ElevatorDifference = {
@@ -48,16 +57,16 @@ export function nearestAvailableElevatorFor(passengerCurrentFloor: number, passe
 			status: elevators[i].status,
 			passengerDestinationFloor,
 			passengerCurrentFloor,
-			currentFloor: elevators[i].currentFloorInMotion ? elevators[i].currentFloorInMotion : elevators[i].currentFloor,
+			elevatorsCurrentFloor,
 		};
 		arrayOfDifferencesInFloors.push(difference);
 	}
 
 	arrayOfDifferencesInFloors.sort((a, b) => {
-		const aIsMovingDownAndBelow = a.status === STATUS.MOVING_DOWN && a.currentFloor < passengerCurrentFloor;
-		const aIsMovingUpAndAbove = a.status === STATUS.MOVING_UP && a.currentFloor > passengerCurrentFloor;
-		const bIsMovingDownAndBelow = b.status === STATUS.MOVING_DOWN && b.currentFloor < passengerCurrentFloor;
-		const bIsMovingUpAndAbove = b.status === STATUS.MOVING_UP && b.currentFloor > passengerCurrentFloor;
+		const aIsMovingDownAndBelow = a.status === STATUS.MOVING_DOWN && a.elevatorsCurrentFloor < passengerCurrentFloor;
+		const aIsMovingUpAndAbove = a.status === STATUS.MOVING_UP && a.elevatorsCurrentFloor > passengerCurrentFloor;
+		const bIsMovingDownAndBelow = b.status === STATUS.MOVING_DOWN && b.elevatorsCurrentFloor < passengerCurrentFloor;
+		const bIsMovingUpAndAbove = b.status === STATUS.MOVING_UP && b.elevatorsCurrentFloor > passengerCurrentFloor;
 
 		if (aIsMovingDownAndBelow && !bIsMovingDownAndBelow) return 1;
 		if (!aIsMovingDownAndBelow && bIsMovingDownAndBelow) return -1;

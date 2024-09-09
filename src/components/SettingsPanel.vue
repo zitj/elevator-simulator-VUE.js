@@ -56,6 +56,7 @@
 import { defineComponent } from 'vue';
 import { mapActions, mapGetters } from 'vuex';
 import { Elevator } from '../classes/Elevator';
+import { Floor } from '../classes/Floor';
 import { Passenger } from '../classes/Passenger';
 import { STATUS } from '../constants/status';
 import { nearestAvailableElevatorFor } from '../services/nearest-elevator-service';
@@ -142,6 +143,9 @@ export default defineComponent({
 			});
 		},
 		moveToNextFloor(elevator: Elevator): void {
+			if (elevator.coordinates.y + 50 + 1 == 0) elevator.status = STATUS.MOVING_UP;
+			if (elevator.coordinates.y - 50 - 1 < 0) elevator.status = STATUS.MOVING_DOWN;
+
 			if (elevator.status === STATUS.MOVING_UP && elevator.currentFloorInMotion < this.floors.length - 1) {
 				++elevator.currentFloorInMotion;
 				elevator.coordinates.y = elevator.coordinates.y - 50 - 1;
