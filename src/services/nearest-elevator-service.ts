@@ -49,7 +49,6 @@ export function nearestAvailableElevatorFor(passengerCurrentFloor: number, passe
 			if (elevatorsCurrentFloor >= passengerCurrentFloor && finalDestination !== null && finalDestination !== undefined && passengerDestinationFloor <= finalDestination) {
 				differenceInFloors = Math.abs(elevatorsCurrentFloor - passengerCurrentFloor) + Math.abs(passengerCurrentFloor - passengerDestinationFloor);
 			}
-
 			if (finalDestination !== null && finalDestination !== undefined && passengerDestinationFloor >= finalDestination && passengerCurrentFloor <= elevatorsCurrentFloor) {
 				differenceInFloors = Math.abs(elevatorsCurrentFloor - passengerCurrentFloor) + Math.abs(passengerCurrentFloor - finalDestination);
 			}
@@ -85,6 +84,6 @@ export function nearestAvailableElevatorFor(passengerCurrentFloor: number, passe
 	});
 
 	const nearestElevatorID = arrayOfDifferencesInFloors[0] ? arrayOfDifferencesInFloors[0].id : null;
-
+	// console.log(arrayOfDifferencesInFloors);
 	if (nearestElevatorID !== null) return elevators[nearestElevatorID];
 }

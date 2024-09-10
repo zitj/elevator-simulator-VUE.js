@@ -108,10 +108,37 @@ export default defineComponent({
 				return;
 			}
 			this.resetRandomSection();
+			this.clearAllTimers();
 			this.resetGeneralState();
 			this.updateNumberOfFloors(this.numberOfFloors + 1);
 			this.updateNumberOfElevators(this.numberOfElevators);
 			if (this.numberOfElevators > 0 && this.numberOfFloors > 0) {
+				this.warningMessageCreate = '';
+				this.warningMessageCall = '';
+				this.buildingCreated = true;
+				this.numberOfFloors = 0;
+				this.numberOfElevators = 0;
+				this.passengersCurrentFloorCall = 0;
+				this.passengersDestinationFloorCall = 0;
+			}
+		},
+		clearAllTimers(): void {
+			this.timerIntervals.forEach((timer) => clearInterval(timer));
+			this.timeouts.forEach((timeout) => clearTimeout(timeout));
+			this.timerIntervals = [];
+			this.timeouts = [];
+		},
+		reinitiateBuilding(numberOfFloors: number, numberOfElevators: number): void {
+			if (numberOfFloors < 1 || numberOfElevators < 1) {
+				this.warningMessageCreate = MESSAGES.GREATER_THAN_ZERO;
+				return;
+			}
+			this.randomButtonInnerText = 'Stop';
+			this.clearAllTimers();
+			this.resetGeneralState();
+			this.updateNumberOfFloors(numberOfFloors);
+			this.updateNumberOfElevators(numberOfElevators);
+			if (numberOfElevators > 0 && numberOfFloors > 0) {
 				this.warningMessageCreate = '';
 				this.warningMessageCall = '';
 				this.buildingCreated = true;
@@ -153,9 +180,6 @@ export default defineComponent({
 			});
 		},
 		moveToNextFloor(elevator: Elevator): void {
-			if (elevator.coordinates.y + 50 + 1 == 0) elevator.status = STATUS.MOVING_UP;
-			if (elevator.coordinates.y - 50 - 1 < 0) elevator.status = STATUS.MOVING_DOWN;
-
 			if (elevator.status === STATUS.MOVING_UP && elevator.currentFloorInMotion < this.floors.length - 1) {
 				++elevator.currentFloorInMotion;
 				elevator.coordinates.y = elevator.coordinates.y - 50 - 1;
@@ -168,14 +192,14 @@ export default defineComponent({
 			this.checkIfThereArePassengersToDropOnThisFloor(elevator);
 		},
 
-		returnHighestFloorOfPassangersToPickUp(passangers: Passenger[]) {
+		returnHighestFloorOfPassangersToPickUp(passangers: Passenger[]): number | null {
 			if (passangers && passangers.length > 0) {
 				return passangers.sort((a, b) => b.waitingOnFloorNumber - a.waitingOnFloorNumber)[0].waitingOnFloorNumber;
 			} else {
 				return null;
 			}
 		},
-		returnDestinationFloorToLeave(elevator: Elevator) {
+		returnDestinationFloorToLeave(elevator: Elevator): number | null {
 			const passangers = elevator.pickedUpPassengers;
 			const passangersWaiting: boolean = elevator.passengersToPickUp && elevator.passengersToPickUp.length > 0 ? true : false;
 
@@ -205,6 +229,11 @@ export default defineComponent({
 
 			if (distance > 0) elevator.status = STATUS.MOVING_DOWN;
 			if (distance < 0) elevator.status = STATUS.MOVING_UP;
+			const buildingHeight = 50 * (this.floors.length - 1) + (this.floors.length - 1);
+			if (elevator.coordinates.y + 50 + 1 > buildingHeight && elevator.status == STATUS.MOVING_DOWN && elevator.currentFloorInMotion > 0) {
+				elevator.currentFloorInMotion = 0;
+				elevator.status = STATUS.MOVING_UP;
+			}
 
 			if (elevator.status == STATUS.IDLE && elevator.currentFloorInMotion == elevator.destinationFloor) {
 				elevator.currentFloor = elevator.destinationFloor;
@@ -231,6 +260,7 @@ export default defineComponent({
 					this.moveElevator(elevator);
 				}, this.movementInterval);
 				this.updateNearestElevatorProperties({ interval: elevator.interval });
+				this.timerIntervals.push(elevator.interval);
 			}
 		},
 		goToDesiredFloor(elevator: Elevator): void {
@@ -278,16 +308,14 @@ export default defineComponent({
 			this.findNearestElevator(this.passengersCurrentFloorCall, this.passengersDestinationFloorCall);
 		},
 
-		resetRandomSection() {
+		resetRandomSection(): void {
 			this.callElevatorRandomly = false;
-			this.timerIntervals.forEach((timer) => clearInterval(timer));
-			// this.elevators.forEach((elevator: Elevator) => clearInterval(elevator.interval));
 			this.randomPassengerCurrentFloor = '-';
 			this.randomPassengerDestinationFloor = '-';
 			this.randomButtonInnerText = 'Start';
 			this.timerDOM = 0;
 		},
-		passengersShowUpRandomly() {
+		passengersShowUpRandomly(): void {
 			let time = 5;
 			let timerCounter = setInterval(() => {
 				time--;
@@ -325,12 +353,7 @@ export default defineComponent({
 		startRandomCalls() {
 			this.callElevatorRandomly = !this.callElevatorRandomly;
 			if (this.callElevatorRandomly) {
-				// this.resetPassengers();
-				// this.timerIntervals.forEach((timer) => clearInterval(timer));
-				// this.timeouts.forEach((timeout) => clearTimeout(timeout));
-				this.randomButtonInnerText = 'Stop';
-				// const numberOfElevators = this.elevators.length;
-				// this.updateNumberOfElevators(numberOfElevators);
+				this.reinitiateBuilding(this.floors.length, this.elevators.length);
 				this.passengersShowUpRandomly();
 			} else {
 				this.resetRandomSection();
