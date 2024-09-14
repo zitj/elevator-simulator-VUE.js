@@ -7,22 +7,8 @@
 					<PassengerComponent :floorId="index"></PassengerComponent>
 				</div>
 			</div>
-			<div id="elevators"></div>
 			<div id="elevators">
-				<div
-					v-for="(elevator, index) in elevators"
-					:key="index"
-					class="elevator"
-					:class="{ active: elevator.status !== 'idle', pause: elevator.isPaused, 'active-random': elevator.isRandomlyCalled && elevator.status !== 'idle' }"
-					:style="getElevatorStyle(elevator)"
-					:id="`${index}`"
-				>
-					<span class="arrow" v-html="returnStatusSymbol(elevator.status)"></span>
-					<span class="destination-floor" v-html="returnDestinationFloorNumber(elevator)"></span>
-					<span class="passangers-in-elevator">
-						<span v-for="passenger in elevator.pickedUpPassengers" class="passanger-in-elevator" :key="passenger.id" v-html="returnPassangerInElevatorSymbol()"></span>
-					</span>
-				</div>
+				<ElevatorComponent v-for="(elevator, index) in elevators" :elevator="elevator" :index="index" :key="index"></ElevatorComponent>
 			</div>
 		</div>
 	</div>
@@ -30,49 +16,21 @@
 
 <script lang="ts">
 import { defineComponent, toRaw } from 'vue';
-import { mapActions, mapGetters, mapState } from 'vuex';
+import { mapGetters } from 'vuex';
 import PassengerComponent from './PassengerComponent.vue';
 import { Elevator } from '../classes/Elevator';
 import { Floor } from '../classes/Floor';
-import { STATUS } from '../constants/status';
-import { SYMBOLS } from '../constants/symbols';
+import ElevatorComponent from './ElevatorComponent.vue';
 
 export default defineComponent({
 	name: 'BuildingComponent',
-	components: { PassengerComponent },
+	components: { PassengerComponent, ElevatorComponent },
 
 	computed: {
-		...mapGetters(['numberOfFloors', 'numberOfElevators', 'elevators', 'floors', 'passengersCurrentFloorCall', 'passengersDestinationFloorCall', 'latestElevatorCall', 'nearestElevator']),
-		...mapState(['nearestElevator']),
+		...mapGetters(['numberOfFloors', 'numberOfElevators', 'elevators', 'floors']),
 	},
 
 	methods: {
-		...mapActions(['updateNearestElevator', 'updateNearestElevatorProperties', 'resetElevators', 'updateElevators', 'updateElevator']),
-
-		returnPassangerInElevatorSymbol(): string {
-			return SYMBOLS.HEAD;
-		},
-
-		returnDestinationFloorNumber(elevator: Elevator): string | undefined {
-			if (elevator.status == STATUS.IDLE) return ``;
-			if (elevator.status === STATUS.READY) return `${elevator.currentFloorInMotion}`;
-			if (elevator.status !== STATUS.IDLE) return `${elevator.destinationFloor}`;
-		},
-		returnStatusSymbol(status: string): string | undefined {
-			if (status === STATUS.MOVING_DOWN) return SYMBOLS.ARROW_DOWN;
-			if (status === STATUS.MOVING_UP) return SYMBOLS.ARROW_UP;
-			if (status === STATUS.READY) return SYMBOLS.READY;
-		},
-		getElevatorStyle(elevator: Elevator) {
-			return {
-				left: `${elevator.coordinates.x}px`,
-				top: `${elevator.coordinates.y}px`,
-				width: '40px',
-				marginLeft: '20px',
-				opacity: elevator.status !== STATUS.IDLE && elevator.status !== STATUS.READY ? 0.75 : 1,
-			};
-		},
-
 		addDOMElementTo(selector: string, arrayOfObjects: Elevator[] | Floor[]): void {
 			const domElements: HTMLElement = document.querySelector(`#${selector}s`) as HTMLElement;
 			if (domElements) {
@@ -98,7 +56,6 @@ export default defineComponent({
 					});
 				}
 			},
-			deep: true,
 		},
 		floors: {
 			handler(newValue): void {
@@ -107,7 +64,6 @@ export default defineComponent({
 					this.addDOMElementTo('floor', floors);
 				});
 			},
-			deep: true,
 		},
 	},
 });
@@ -184,56 +140,5 @@ export default defineComponent({
 	position: absolute;
 	left: 0;
 	top: 0;
-}
-
-#elevators .elevator {
-	width: 40px;
-	height: 51px;
-	background: rgb(55, 55, 55);
-	background: #2d3436;
-	text-align: center;
-	transition: 1s;
-	opacity: 1;
-	z-index: 1;
-	position: absolute;
-}
-#elevators .elevator span {
-	color: white;
-	line-height: 50px;
-	font-weight: bold;
-	font-size: 20px;
-	z-index: 1;
-	opacity: 0.6;
-}
-#elevators .elevator span.arrow {
-	color: var(--elevator-arrow-color);
-}
-
-#elevators .elevator.active {
-	background-color: var(--elevator-regular-call-color);
-	opacity: 0.75;
-}
-#elevators .elevator.pause {
-	opacity: 1;
-}
-#elevators .elevator.active-random,
-#elevators .elevator.active-random.pause {
-	background-color: var(--elevator-random-call-color);
-}
-.passangers-in-elevator {
-	position: absolute;
-	opacity: 1;
-	z-index: 9999999;
-	display: flex;
-	left: -8px;
-	bottom: -18px;
-	transform: scale(0.7);
-}
-
-.passanger-in-elevator {
-	margin-left: -12px;
-}
-.passanger-in-elevator:first-child {
-	margin-left: 0;
 }
 </style>

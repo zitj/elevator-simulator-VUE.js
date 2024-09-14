@@ -15,7 +15,7 @@
 			</div>
 			<button class="create-button">Create</button>
 		</form>
-		<form v-if="buildingCreated" id="call-elevator-form" @submit.prevent="handleCallElevator">
+		<form v-show="buildingCreated" id="call-elevator-form" @submit.prevent="handleCallElevator">
 			<div class="content">
 				<h2>Call Elevator</h2>
 				<p class="warning-message">{{ warningMessageCall }}</p>
@@ -30,7 +30,7 @@
 			</div>
 			<button type="submit" class="call-button">Call</button>
 		</form>
-		<section v-if="buildingCreated" id="random-calls-section">
+		<section v-show="buildingCreated" id="random-calls-section">
 			<div class="content">
 				<h2>Random calls</h2>
 				<p class="warning-message"></p>
