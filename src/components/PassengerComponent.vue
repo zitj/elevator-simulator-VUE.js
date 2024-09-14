@@ -10,12 +10,16 @@
 </template>
 
 <script>
+import { defineComponent } from 'vue';
 import { mapGetters } from 'vuex';
 import { SYMBOLS } from '../constants/symbols';
-export default {
+export default defineComponent({
 	name: 'PassengerComponent',
 	props: {
-		floorId: null,
+		floorId: {
+			type: Number,
+			required: true,
+		},
 	},
 	computed: {
 		...mapGetters(['passengers']),
@@ -26,7 +30,7 @@ export default {
 		},
 	},
 	watch: {},
-};
+});
 </script>
 
 <style scoped>

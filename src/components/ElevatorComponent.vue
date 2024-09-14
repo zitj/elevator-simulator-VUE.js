@@ -18,7 +18,6 @@ import { defineComponent } from 'vue';
 import { Elevator } from '../classes/Elevator';
 import { STATUS } from '../constants/status';
 import { SYMBOLS } from '../constants/symbols';
-
 export default defineComponent({
 	name: 'ElevatorComponent',
 	props: {
@@ -57,7 +56,7 @@ export default defineComponent({
 			return SYMBOLS.HEAD;
 		};
 
-		return { returnDestinationFloorNumber, returnStatusSymbol, getElevatorStyle, returnPassangerInElevatorSymbol };
+		return { getElevatorStyle, returnStatusSymbol, returnDestinationFloorNumber, returnPassangerInElevatorSymbol };
 	},
 });
 </script>

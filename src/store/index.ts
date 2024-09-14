@@ -13,6 +13,7 @@ interface State {
 	passengers: Passenger[];
 	floors: Floor[];
 	nearestElevator: Elevator | null;
+	ongoingRequestsExist: boolean;
 }
 
 const state: State = {
@@ -24,6 +25,7 @@ const state: State = {
 	passengers: [],
 	floors: [],
 	nearestElevator: null,
+	ongoingRequestsExist: false,
 };
 
 const mutations = {
@@ -56,6 +58,10 @@ const mutations = {
 		state.passengers = [];
 		state.floors = [];
 		state.nearestElevator = null;
+		state.ongoingRequestsExist = false;
+	},
+	SET_ONGOING_REQUESTS_EXIST_TO_TRUE(state: State, value: boolean): void {
+		state.ongoingRequestsExist = value;
 	},
 	SET_PASSENGERS_CURRENT_FLOOR_CALL(state: State, passengersCurrentFloorCall: number): void {
 		state.passengersCurrentFloorCall = passengersCurrentFloorCall;
@@ -120,6 +126,7 @@ const mutations = {
 				});
 			}
 		});
+		state.passengers = state.passengers.filter((passenger) => passenger.status !== STATUS.DROPPED);
 	},
 	RESET_PASSENGERS(state: State): void {
 		state.passengers = [];
@@ -174,6 +181,9 @@ const actions = {
 	resetPassengers({ commit }: { commit: any }) {
 		commit('RESET_PASSENGERS');
 	},
+	setOnogingRequestsExist({ commit }: { commit: any }, value: boolean) {
+		commit('SET_ONGOING_REQUESTS_EXIST_TO_TRUE', value);
+	},
 };
 
 const getters = {
@@ -182,6 +192,7 @@ const getters = {
 	elevators: (state: State) => state.elevators,
 	passengers: (state: State) => state.passengers,
 	floors: (state: State) => state.floors,
+	ongoingRequestsExist: (state: State) => state.ongoingRequestsExist,
 	passengersCurrentFloorCall: (state: State) => state.passengersCurrentFloorCall,
 	passengersDestinationFloorCall: (state: State) => state.passengersDestinationFloorCall,
 	nearestElevator: (state: State) => state.nearestElevator,

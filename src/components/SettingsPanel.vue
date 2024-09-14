@@ -56,10 +56,10 @@
 import { defineComponent } from 'vue';
 import { mapActions, mapGetters } from 'vuex';
 import { Elevator } from '../classes/Elevator';
-import { Passenger } from '../classes/Passenger';
 import { STATUS } from '../constants/status';
 import { nearestAvailableElevatorFor } from '../services/nearest-elevator-service';
 import { MESSAGES } from '../constants/messages';
+import { useElevator } from '../composables/useElevator';
 
 export default defineComponent({
 	name: 'SettingsPanel',
@@ -83,12 +83,11 @@ export default defineComponent({
 		};
 	},
 	computed: {
-		...mapGetters(['elevators', 'floors']),
+		...mapGetters(['elevators', 'floors', 'ongoingRequestsExist']),
 	},
 
 	methods: {
 		...mapActions([
-			'resetElevators',
 			'updateNumberOfFloors',
 			'updateNumberOfElevators',
 			'updatePassengersCurrentFloorCall',
@@ -97,11 +96,19 @@ export default defineComponent({
 			'updateElevator',
 			'updateNearestElevatorProperties',
 			'passengerShowsUp',
-			'pickUpPassenger',
-			'dropPassangerOnDestinationFloor',
 			'resetGeneralState',
-			'resetPassengers',
+			'setOnogingRequestsExist',
 		]),
+
+		clearAllTimers(): void {
+			const { clearElevatorTimers } = useElevator();
+			clearElevatorTimers();
+			this.timerIntervals.forEach((timer) => clearInterval(timer));
+			this.timeouts.forEach((timeout) => clearTimeout(timeout));
+			this.timerIntervals = [];
+			this.timeouts = [];
+		},
+
 		createBuilding(): void {
 			if (this.numberOfFloors < 1 || this.numberOfElevators < 1) {
 				this.warningMessageCreate = MESSAGES.GREATER_THAN_ZERO;
@@ -122,12 +129,7 @@ export default defineComponent({
 				this.passengersDestinationFloorCall = 0;
 			}
 		},
-		clearAllTimers(): void {
-			this.timerIntervals.forEach((timer) => clearInterval(timer));
-			this.timeouts.forEach((timeout) => clearTimeout(timeout));
-			this.timerIntervals = [];
-			this.timeouts = [];
-		},
+
 		reinitiateBuilding(numberOfFloors: number, numberOfElevators: number): void {
 			if (numberOfFloors < 1 || numberOfElevators < 1) {
 				this.warningMessageCreate = MESSAGES.GREATER_THAN_ZERO;
@@ -149,121 +151,8 @@ export default defineComponent({
 			}
 		},
 
-		checkIfThereArePassangersWaitingOnThisFloor(elevator: Elevator): void {
-			const currentFloor = elevator.currentFloorInMotion ? elevator.currentFloorInMotion : elevator.currentFloor;
-			elevator.passengersToPickUp.forEach((passanger, index) => {
-				if (passanger.waitingOnFloorNumber == currentFloor) {
-					this.stopMoving(elevator);
-					let timeout = setTimeout(() => {
-						clearTimeout(timeout);
-						elevator.status = STATUS.READY;
-						this.pickUpPassenger(elevator);
-						this.startMoving(elevator);
-					}, this.movementInterval);
-					this.timeouts.push(timeout);
-				}
-			});
-		},
-
-		checkIfThereArePassengersToDropOnThisFloor(elevator: Elevator): void {
-			elevator.pickedUpPassengers.forEach((passenger) => {
-				if (passenger.destinationFloor == elevator.currentFloorInMotion) {
-					this.stopMoving(elevator);
-					let timeout = setTimeout(() => {
-						clearTimeout(timeout);
-						elevator.status = STATUS.READY;
-						this.dropPassangerOnDestinationFloor(elevator);
-						this.startMoving(elevator);
-					}, this.movementInterval);
-					this.timeouts.push(timeout);
-				}
-			});
-		},
-		moveToNextFloor(elevator: Elevator): void {
-			if (elevator.status === STATUS.MOVING_UP && elevator.currentFloorInMotion < this.floors.length - 1) {
-				++elevator.currentFloorInMotion;
-				elevator.coordinates.y = elevator.coordinates.y - 50 - 1;
-			}
-			if (elevator.status === STATUS.MOVING_DOWN && elevator.currentFloorInMotion > 0) {
-				--elevator.currentFloorInMotion;
-				elevator.coordinates.y = elevator.coordinates.y + 50 + 1;
-			}
-			this.checkIfThereArePassangersWaitingOnThisFloor(elevator);
-			this.checkIfThereArePassengersToDropOnThisFloor(elevator);
-		},
-
-		returnHighestFloorOfPassangersToPickUp(passangers: Passenger[]): number | null {
-			if (passangers && passangers.length > 0) {
-				return passangers.sort((a, b) => b.waitingOnFloorNumber - a.waitingOnFloorNumber)[0].waitingOnFloorNumber;
-			} else {
-				return null;
-			}
-		},
-		returnDestinationFloorToLeave(elevator: Elevator): number | null {
-			const passangers = elevator.pickedUpPassengers;
-			const passangersWaiting: boolean = elevator.passengersToPickUp && elevator.passengersToPickUp.length > 0 ? true : false;
-
-			if (passangers && passangers.length > 0 && !passangersWaiting) {
-				if (elevator.status === STATUS.MOVING_DOWN) return passangers.sort((a, b) => a.destinationFloor - b.destinationFloor)[0].destinationFloor;
-				if (elevator.status === STATUS.MOVING_UP) return passangers.sort((a, b) => b.destinationFloor - a.destinationFloor)[0].destinationFloor;
-				if (elevator.status === STATUS.READY) {
-					return passangers.sort((a, b) => a.destinationFloor - b.destinationFloor)[0].destinationFloor;
-				}
-			}
-			return null;
-		},
-
-		moveElevator(elevator: Elevator): void {
-			if (elevator.status === STATUS.READY) this.pickUpPassenger(elevator);
-			let highestDestinationFloor = this.returnHighestFloorOfPassangersToPickUp(elevator.passengersToPickUp);
-			let destinationFloor: number | null = this.returnDestinationFloorToLeave(elevator);
-			if (highestDestinationFloor !== null) elevator.destinationFloor = Math.abs(highestDestinationFloor);
-			if (destinationFloor !== null && highestDestinationFloor == null) elevator.destinationFloor = Math.abs(destinationFloor);
-			const distance = elevator.currentFloorInMotion - elevator.destinationFloor;
-			if (distance == 0 && elevator.passengersToPickUp.length == 0 && elevator.pickedUpPassengers.length == 0) elevator.status = STATUS.IDLE;
-			if (distance == 0 && (elevator.passengersToPickUp.length !== 0 || elevator.pickedUpPassengers.length !== 0)) {
-				this.stopMoving(elevator);
-				elevator.status = STATUS.READY;
-				this.startMoving(elevator);
-			}
-
-			if (distance > 0) elevator.status = STATUS.MOVING_DOWN;
-			if (distance < 0) elevator.status = STATUS.MOVING_UP;
-			const buildingHeight = 50 * (this.floors.length - 1) + (this.floors.length - 1);
-			if (elevator.coordinates.y + 50 + 1 > buildingHeight && elevator.status == STATUS.MOVING_DOWN && elevator.currentFloorInMotion > 0) {
-				elevator.currentFloorInMotion = 0;
-				elevator.status = STATUS.MOVING_UP;
-			}
-
-			if (elevator.status == STATUS.IDLE && elevator.currentFloorInMotion == elevator.destinationFloor) {
-				elevator.currentFloor = elevator.destinationFloor;
-				elevator.passengerThatCalledFirst = null;
-				this.stopMoving(elevator);
-			}
-
-			if (elevator.currentFloorInMotion !== elevator.destinationFloor) {
-				if (elevator.status === STATUS.MOVING_UP || elevator.status === STATUS.MOVING_DOWN) this.moveToNextFloor(elevator);
-			}
-		},
-		stopMoving(elevator: Elevator): void {
-			if (elevator.interval !== null) {
-				elevator.isPaused = true;
-				clearInterval(elevator.interval);
-				elevator.interval = null;
-				this.updateNearestElevatorProperties({ interval: elevator.interval });
-			}
-		},
-		startMoving(elevator: Elevator): void {
-			elevator.isPaused = false;
-			if (elevator.interval === null || elevator.interval === undefined) {
-				elevator.interval = setInterval(() => {
-					this.moveElevator(elevator);
-				}, this.movementInterval);
-				this.updateNearestElevatorProperties({ interval: elevator.interval });
-				this.timerIntervals.push(elevator.interval);
-			}
-		},
 		goToDesiredFloor(elevator: Elevator): void {
+			const { startMoving } = useElevator();
 			if (elevator.passengersToPickUp && elevator.passengersToPickUp.length > 0) {
 				elevator.currentFloorInMotion = elevator.currentFloorInMotion ? elevator.currentFloorInMotion : elevator.currentFloor;
 				if (this.passengersCurrentFloorCall == elevator.currentFloorInMotion) {
@@ -274,7 +163,7 @@ export default defineComponent({
 					elevator.destinationFloor = this.passengersCurrentFloorCall;
 					elevator.passengersDestinationFloor = this.passengersDestinationFloorCall;
 				}
-				this.startMoving(elevator);
+				startMoving(elevator);
 				this.updateElevator(elevator);
 			}
 		},
@@ -288,9 +177,9 @@ export default defineComponent({
 				this.warningMessageCall = MESSAGES.MAX_FLOOR_NUMBER.replace('{0}', this.floors.length);
 				return;
 			}
-
 			const nearestElevator = nearestAvailableElevatorFor(passengerCurrentFloor, passengerDestinationFloor, this.elevators);
 			if (nearestElevator) {
+				this.setOnogingRequestsExist(true);
 				this.warningMessageCall = '';
 				nearestElevator.isRandomlyCalled = isRandomCall ? true : false;
 				this.updatePassengersCurrentFloorCall(passengerCurrentFloor);
@@ -315,6 +204,7 @@ export default defineComponent({
 			this.randomButtonInnerText = 'Start';
 			this.timerDOM = 0;
 		},
+
 		passengersShowUpRandomly(): void {
 			let time = 5;
 			let timerCounter = setInterval(() => {
