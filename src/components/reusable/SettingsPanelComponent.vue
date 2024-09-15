@@ -27,6 +27,7 @@ export default {
 
 <style scoped>
 .settings-panel form {
+	flex: 1;
 	width: 250px;
 	padding: 0 50px 50px 50px;
 	border: 1px solid #3333332e;

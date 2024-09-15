@@ -1,41 +1,41 @@
 <template>
 	<div class="settings-panel">
 		<SettingsPanelComponent
-			formId="create-building-form"
-			title="Create Building"
 			:warningMessage="warningMessageCreate"
-			buttonClass="create-button"
-			buttonText="Create"
 			:panelType="'form'"
 			:handleSubmit="createBuilding"
+			formId="create-building-form"
+			title="Create Building"
+			buttonClass="create-button"
+			buttonText="Create"
 		>
 			<InputComponent label="Number of floors:" v-model="numberOfFloors" id="generate-number-of-floors-input" name="number-of-floors" type="number" />
 			<InputComponent label="Number of elevators:" v-model="numberOfElevators" id="generate-number-of-elevators-input" name="number-of-elevators" type="number" />
 		</SettingsPanelComponent>
 
 		<SettingsPanelComponent
+			:warningMessage="warningMessageCall"
+			:panelType="'form'"
+			:handleSubmit="handleCallElevator"
 			v-show="buildingCreated"
 			formId="call-elevator-form"
 			title="Call Elevator"
-			:warningMessage="warningMessageCall"
 			buttonClass="call-button"
 			buttonText="Call"
-			:panelType="'form'"
-			:handleSubmit="handleCallElevator"
 		>
 			<InputComponent label="From current floor:" v-model="passengersCurrentFloorCall" id="current-floor-input" name="current-floor" type="number" />
 			<InputComponent label="To destination floor:" v-model="passengersDestinationFloorCall" id="destination-floor-input" name="destination-floor" type="number" />
 		</SettingsPanelComponent>
 
 		<SettingsPanelComponent
+			:buttonText="randomButtonInnerText"
+			:warningMessage="warningMessageCall"
+			:handleSubmit="startRandomCalls"
+			:panelType="'form'"
 			v-show="buildingCreated"
 			formId="random-calls-section"
 			title="Random calls"
-			:warningMessage="warningMessageCall"
 			buttonClass="random-calls-button"
-			:buttonText="randomButtonInnerText"
-			:panelType="'form'"
-			:handleSubmit="startRandomCalls"
 		>
 			<div class="timer">
 				<span class="text">Next call starts in:</span>

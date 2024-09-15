@@ -75,6 +75,7 @@ nav a.router-link-exact-active {
 
 #general-wrapper.alternative-view .settings-panel form,
 #general-wrapper.alternative-view .settings-panel section {
+	flex: 1;
 	padding: 0px 10px 20px 10px;
 	text-align: center;
 	transition: 0.3s;
