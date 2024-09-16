@@ -58,9 +58,10 @@ import { defineComponent } from 'vue';
 import { mapActions, mapGetters } from 'vuex';
 import { Elevator } from '../classes/Elevator';
 import { STATUS } from '../constants/status';
-import { nearestAvailableElevatorFor } from '../services/nearest-elevator-service';
 import { MESSAGES } from '../constants/messages';
 import { useElevator } from '../composables/useElevator';
+import { useRandomPassengers } from '../composables/useRandomPassengers';
+import { nearestAvailableElevatorFor } from '../services/nearest-elevator-service';
 import SettingsPanelComponent from './reusable/SettingsPanelComponent.vue';
 import InputComponent from './reusable/InputComponent.vue';
 
@@ -76,13 +77,13 @@ export default defineComponent({
 				passengersDestinationFloorCall: 0,
 			},
 			buildingCreated: false,
-			callElevatorRandomly: false,
-			timerIntervals: [] as number[],
-			timeouts: [] as number[],
-			timerDOM: 0,
-			randomButtonInnerText: 'Start',
-			randomPassengerCurrentFloor: '-',
-			randomPassengerDestinationFloor: '-',
+			// callElevatorRandomly: false,
+			// timerIntervals: [] as number[],
+			// timeouts: [] as number[],
+			// timerDOM: 0,
+			// randomButtonInnerText: 'Start',
+			// randomPassengerCurrentFloor: '-',
+			// randomPassengerDestinationFloor: '-',
 			movementInterval: 700,
 			warningMessageCreate: `${MESSAGES.BETTER_USER_EXPERIENCE}`,
 			warningMessageCall: '',
@@ -92,21 +93,21 @@ export default defineComponent({
 		...mapGetters('floorsStore', ['numberOfFloors', 'floors']),
 		...mapGetters('elevatorsStore', ['numberOfElevators', 'elevators', 'ongoingRequestsExist']),
 		...mapGetters('passengersStore', ['passengers', 'passengersCurrentFloorCall', 'passengersDestinationFloorCall']),
+		...mapGetters('randomCallsStore', ['callElevatorRandomly', 'randomButtonInnerText', 'timerDOM', 'randomPassengerCurrentFloor', 'randomPassengerDestinationFloor']),
 	},
 
 	methods: {
 		...mapActions('floorsStore', ['updateNumberOfFloors']),
 		...mapActions('elevatorsStore', ['updateNumberOfElevators', 'updateElevator', 'callElevator', 'updateNearestElevatorProperties', 'setOnogingRequestsExist']),
 		...mapActions('passengersStore', ['updatePassengersCurrentFloorCall', 'updatePassengersDestinationFloorCall', 'passengerShowsUp']),
+		...mapActions('randomCallsStore', ['setCallElevatorRandomly']),
 		...mapActions(['resetGeneralState']),
 
 		clearAllTimers(): void {
 			const { clearElevatorTimers } = useElevator();
+			const { clearRandomCallsTimers } = useRandomPassengers();
 			clearElevatorTimers();
-			this.timerIntervals.forEach((timer) => clearInterval(timer));
-			this.timeouts.forEach((timeout) => clearTimeout(timeout));
-			this.timerIntervals = [];
-			this.timeouts = [];
+			clearRandomCallsTimers();
 		},
 
 		createBuilding(): void {
@@ -114,7 +115,6 @@ export default defineComponent({
 				this.warningMessageCreate = MESSAGES.GREATER_THAN_ZERO;
 				return;
 			}
-			this.resetRandomSection();
 			this.clearAllTimers();
 			this.resetGeneralState();
 
@@ -136,7 +136,7 @@ export default defineComponent({
 				this.warningMessageCreate = MESSAGES.GREATER_THAN_ZERO;
 				return;
 			}
-			this.randomButtonInnerText = 'Stop';
+			// this.randomButtonInnerText = 'Stop';
 			this.clearAllTimers();
 			this.resetGeneralState();
 			this.updateNumberOfFloors(numberOfFloors);
@@ -198,57 +198,12 @@ export default defineComponent({
 			});
 			this.findNearestElevator(this.inputs.passengersCurrentFloorCall, this.inputs.passengersDestinationFloorCall);
 		},
-
-		resetRandomSection(): void {
-			this.callElevatorRandomly = false;
-			this.randomPassengerCurrentFloor = '-';
-			this.randomPassengerDestinationFloor = '-';
-			this.randomButtonInnerText = 'Start';
-			this.timerDOM = 0;
-		},
-
-		passengersShowUpRandomly(): void {
-			let time = 5;
-			let timerCounter = setInterval(() => {
-				time--;
-				if (time < 0) time = 4;
-				if (!this.callElevatorRandomly) {
-					time = 0;
-					clearInterval(timerCounter);
-					clearInterval(timer);
-				}
-				this.timerDOM = time;
-			}, 1000);
-
-			this.timerIntervals.push(timerCounter);
-
-			let timer = setInterval(() => {
-				time = 0;
-				if (this.callElevatorRandomly) {
-					let randomCurrentFloor = Math.floor(Math.random() * this.floors.length);
-					let randomDestinationFloor = Math.floor(Math.random() * this.floors.length);
-					while (randomCurrentFloor === randomDestinationFloor) {
-						randomDestinationFloor = Math.floor(Math.random() * this.floors.length);
-					}
-					if (randomCurrentFloor !== randomDestinationFloor) {
-						this.randomPassengerCurrentFloor = randomCurrentFloor.toString();
-						this.randomPassengerDestinationFloor = randomDestinationFloor.toString();
-						this.findNearestElevator(randomCurrentFloor, randomDestinationFloor, true);
-					}
-				} else {
-					clearInterval(timerCounter);
-					clearInterval(timer);
-				}
-			}, 5000);
-			this.timerIntervals.push(timer);
-		},
 		startRandomCalls() {
-			this.callElevatorRandomly = !this.callElevatorRandomly;
+			this.setCallElevatorRandomly(!this.callElevatorRandomly);
 			if (this.callElevatorRandomly) {
+				const { showRandomPassenger } = useRandomPassengers();
 				this.reinitiateBuilding(this.floors.length, this.elevators.length);
-				this.passengersShowUpRandomly();
-			} else {
-				this.resetRandomSection();
+				showRandomPassenger(this.findNearestElevator);
 			}
 		},
 	},

@@ -7,6 +7,7 @@ import { RootState } from '@/models/RootState';
 import { floorsStore } from './modules/floors-store';
 import { elevatorsStore } from './modules/elevators-store';
 import { passengersStore } from './modules/passengers-store';
+import { randomCallsStore } from './modules/random-calls-store';
 
 interface State {
 	numberOfFloors: number;
@@ -192,6 +193,7 @@ const actions = {
 		dispatch('floorsStore/resetState');
 		dispatch('elevatorsStore/resetState');
 		dispatch('passengersStore/resetState');
+		dispatch('ranodmCallsStore/resetState');
 	},
 	resetPassengers({ commit }: { commit: any }) {
 		commit('RESET_PASSENGERS');
@@ -224,27 +226,19 @@ const getters = {
 	},
 };
 
-// const storeOptions: StoreOptions<State> = {
-// 	state,
-// 	mutations,
-// 	actions,
-// 	getters,
-// };
 const storeOptions: StoreOptions<RootState> = {
-	// state,
-	// mutations,
-	// actions,
-	// getters,
 	modules: {
 		floorsStore,
 		elevatorsStore,
 		passengersStore,
+		randomCallsStore,
 	},
 	actions: {
 		resetGeneralState({ dispatch }: ActionContext<RootState, RootState>): void {
 			dispatch('floorsStore/resetState');
 			dispatch('elevatorsStore/resetState');
 			dispatch('passengersStore/resetState');
+			dispatch('randomCallsStore/resetState');
 		},
 	},
 };

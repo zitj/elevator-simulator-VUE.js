@@ -4,7 +4,7 @@ import { STATUS } from '@/constants/status';
 import { computed } from 'vue';
 import { store } from '../store/index';
 
-export function useElevator() {
+export function useElevator(): { startMoving: (elevator: Elevator) => void; clearElevatorTimers: () => void } {
 	const movementInterval = 700;
 	const floors = computed(() => {
 		return store.getters['floorsStore/floors'];
