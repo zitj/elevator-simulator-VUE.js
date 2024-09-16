@@ -3,8 +3,9 @@ import { Passenger } from '@/classes/Passenger';
 import { STATUS } from '@/constants/status';
 import { computed } from 'vue';
 import { store } from '../store/index';
+import { ElevatorFunctions } from '../models/functions/ElevatorFunctions';
 
-export function useElevator(): { startMoving: (elevator: Elevator) => void; clearElevatorTimers: () => void } {
+export function useElevator(): ElevatorFunctions {
 	const movementInterval = 700;
 	const floors = computed(() => {
 		return store.getters['floorsStore/floors'];

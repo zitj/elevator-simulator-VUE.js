@@ -29,7 +29,7 @@
 
 		<SettingsPanelComponent
 			:buttonText="randomButtonInnerText"
-			:warningMessage="warningMessageCall"
+			:warningMessage="''"
 			:handleSubmit="startRandomCalls"
 			:panelType="'form'"
 			v-show="buildingCreated"
@@ -62,6 +62,8 @@ import { MESSAGES } from '../constants/messages';
 import { useElevator } from '../composables/useElevator';
 import { useRandomPassengers } from '../composables/useRandomPassengers';
 import { nearestAvailableElevatorFor } from '../services/nearest-elevator-service';
+import { RandomPassengerFunctions } from '../models/functions/RandomPassengerFunctions';
+import { ElevatorFunctions } from '../models/functions/ElevatorFunctions';
 import SettingsPanelComponent from './reusable/SettingsPanelComponent.vue';
 import InputComponent from './reusable/InputComponent.vue';
 
@@ -77,17 +79,14 @@ export default defineComponent({
 				passengersDestinationFloorCall: 0,
 			},
 			buildingCreated: false,
-			// callElevatorRandomly: false,
-			// timerIntervals: [] as number[],
-			// timeouts: [] as number[],
-			// timerDOM: 0,
-			// randomButtonInnerText: 'Start',
-			// randomPassengerCurrentFloor: '-',
-			// randomPassengerDestinationFloor: '-',
 			movementInterval: 700,
 			warningMessageCreate: `${MESSAGES.BETTER_USER_EXPERIENCE}`,
 			warningMessageCall: '',
+			randomPassengerFunctions: {} as RandomPassengerFunctions,
 		};
+	},
+	mounted() {
+		this.initialiseRandomPassengersFunctions();
 	},
 	computed: {
 		...mapGetters('floorsStore', ['numberOfFloors', 'floors']),
@@ -105,9 +104,13 @@ export default defineComponent({
 
 		clearAllTimers(): void {
 			const { clearElevatorTimers } = useElevator();
-			const { clearRandomCallsTimers } = useRandomPassengers();
+			const { clearRandomCallsTimers } = this.randomPassengerFunctions;
 			clearElevatorTimers();
 			clearRandomCallsTimers();
+		},
+
+		initialiseRandomPassengersFunctions() {
+			this.randomPassengerFunctions = useRandomPassengers();
 		},
 
 		createBuilding(): void {
@@ -201,7 +204,7 @@ export default defineComponent({
 		startRandomCalls() {
 			this.setCallElevatorRandomly(!this.callElevatorRandomly);
 			if (this.callElevatorRandomly) {
-				const { showRandomPassenger } = useRandomPassengers();
+				const { showRandomPassenger } = this.randomPassengerFunctions;
 				this.reinitiateBuilding(this.floors.length, this.elevators.length);
 				showRandomPassenger(this.findNearestElevator);
 			}

@@ -1,7 +1,8 @@
+import { RandomPassengerFunctions } from '../models/functions/RandomPassengerFunctions';
 import { store } from '../store/index';
 import { computed } from 'vue';
 
-export function useRandomPassengers(): { showRandomPassenger: (findNearestElevator: any) => void; clearRandomCallsTimers: () => void } {
+export function useRandomPassengers(): RandomPassengerFunctions {
 	const floors = computed(() => {
 		return store.getters['floorsStore/floors'];
 	});
@@ -29,7 +30,6 @@ export function useRandomPassengers(): { showRandomPassenger: (findNearestElevat
 		}, 1000);
 
 		timerIntervals.push(timerCounter);
-
 		const timer = setInterval(() => {
 			if (callElevatorRandomly.value) {
 				const randomCurrentFloor = Math.floor(Math.random() * floors.value.length);
