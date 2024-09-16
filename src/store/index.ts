@@ -1,8 +1,12 @@
 import { Elevator } from '@/classes/Elevator';
 import { Passenger } from '@/classes/Passenger';
 import { Floor } from '@/classes/Floor';
-import { createStore, StoreOptions } from 'vuex';
+import { ActionContext, createStore, StoreOptions } from 'vuex';
 import { STATUS } from '@/constants/status';
+import { RootState } from '@/models/RootState';
+import { floorsStore } from './modules/floors-store';
+import { elevatorsStore } from './modules/elevators-store';
+import { passengersStore } from './modules/passengers-store';
 
 interface State {
 	numberOfFloors: number;
@@ -59,6 +63,11 @@ const mutations = {
 		state.floors = [];
 		state.nearestElevator = null;
 		state.ongoingRequestsExist = false;
+	},
+	RESET_STATE_MODULES({ dispatch }: ActionContext<RootState, RootState>): void {
+		dispatch('floorsStore/resetState');
+		dispatch('elevatorsStore/resetState');
+		dispatch('passengersStore/resetState');
 	},
 	SET_ONGOING_REQUESTS_EXIST_TO_TRUE(state: State, value: boolean): void {
 		state.ongoingRequestsExist = value;
@@ -175,8 +184,14 @@ const actions = {
 	dropPassangerOnDestinationFloor({ commit }: { commit: any }, nearestElevator: Elevator) {
 		commit('DROP_PASSANGER', nearestElevator);
 	},
-	resetGeneralState({ commit }: { commit: any }) {
-		commit('RESET_STATE');
+	// resetGeneralState({ commit }: { commit: any }) {
+	// 	// commit('RESET_STATE');
+	// 	commit('RESET_STATE_MODULES');
+	// },
+	resetGeneralState({ dispatch }: ActionContext<RootState, RootState>): void {
+		dispatch('floorsStore/resetState');
+		dispatch('elevatorsStore/resetState');
+		dispatch('passengersStore/resetState');
 	},
 	resetPassengers({ commit }: { commit: any }) {
 		commit('RESET_PASSENGERS');
@@ -209,11 +224,29 @@ const getters = {
 	},
 };
 
-const storeOptions: StoreOptions<State> = {
-	state,
-	mutations,
-	actions,
-	getters,
+// const storeOptions: StoreOptions<State> = {
+// 	state,
+// 	mutations,
+// 	actions,
+// 	getters,
+// };
+const storeOptions: StoreOptions<RootState> = {
+	// state,
+	// mutations,
+	// actions,
+	// getters,
+	modules: {
+		floorsStore,
+		elevatorsStore,
+		passengersStore,
+	},
+	actions: {
+		resetGeneralState({ dispatch }: ActionContext<RootState, RootState>): void {
+			dispatch('floorsStore/resetState');
+			dispatch('elevatorsStore/resetState');
+			dispatch('passengersStore/resetState');
+		},
+	},
 };
 
-export const store = createStore<State>(storeOptions);
+export const store = createStore<RootState>(storeOptions);

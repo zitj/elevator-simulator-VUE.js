@@ -9,8 +9,8 @@
 			buttonClass="create-button"
 			buttonText="Create"
 		>
-			<InputComponent label="Number of floors:" v-model="numberOfFloors" id="generate-number-of-floors-input" name="number-of-floors" type="number" />
-			<InputComponent label="Number of elevators:" v-model="numberOfElevators" id="generate-number-of-elevators-input" name="number-of-elevators" type="number" />
+			<InputComponent label="Number of floors:" v-model.number="inputs.numberOfFloors" id="generate-number-of-floors-input" name="number-of-floors" type="number" />
+			<InputComponent label="Number of elevators:" v-model.number="inputs.numberOfElevators" id="generate-number-of-elevators-input" name="number-of-elevators" type="number" />
 		</SettingsPanelComponent>
 
 		<SettingsPanelComponent
@@ -23,8 +23,8 @@
 			buttonClass="call-button"
 			buttonText="Call"
 		>
-			<InputComponent label="From current floor:" v-model="passengersCurrentFloorCall" id="current-floor-input" name="current-floor" type="number" />
-			<InputComponent label="To destination floor:" v-model="passengersDestinationFloorCall" id="destination-floor-input" name="destination-floor" type="number" />
+			<InputComponent label="From current floor:" v-model="inputs.passengersCurrentFloorCall" id="current-floor-input" name="current-floor" type="number" />
+			<InputComponent label="To destination floor:" v-model="inputs.passengersDestinationFloorCall" id="destination-floor-input" name="destination-floor" type="number" />
 		</SettingsPanelComponent>
 
 		<SettingsPanelComponent
@@ -69,10 +69,12 @@ export default defineComponent({
 	components: { SettingsPanelComponent, InputComponent },
 	data() {
 		return {
-			numberOfFloors: 0,
-			numberOfElevators: 0,
-			passengersCurrentFloorCall: 0,
-			passengersDestinationFloorCall: 0,
+			inputs: {
+				numberOfFloors: 0,
+				numberOfElevators: 0,
+				passengersCurrentFloorCall: 0,
+				passengersDestinationFloorCall: 0,
+			},
 			buildingCreated: false,
 			callElevatorRandomly: false,
 			timerIntervals: [] as number[],
@@ -87,22 +89,16 @@ export default defineComponent({
 		};
 	},
 	computed: {
-		...mapGetters(['elevators', 'floors', 'ongoingRequestsExist']),
+		...mapGetters('floorsStore', ['numberOfFloors', 'floors']),
+		...mapGetters('elevatorsStore', ['numberOfElevators', 'elevators', 'ongoingRequestsExist']),
+		...mapGetters('passengersStore', ['passengers', 'passengersCurrentFloorCall', 'passengersDestinationFloorCall']),
 	},
 
 	methods: {
-		...mapActions([
-			'updateNumberOfFloors',
-			'updateNumberOfElevators',
-			'updatePassengersCurrentFloorCall',
-			'updatePassengersDestinationFloorCall',
-			'callElevator',
-			'updateElevator',
-			'updateNearestElevatorProperties',
-			'passengerShowsUp',
-			'resetGeneralState',
-			'setOnogingRequestsExist',
-		]),
+		...mapActions('floorsStore', ['updateNumberOfFloors']),
+		...mapActions('elevatorsStore', ['updateNumberOfElevators', 'updateElevator', 'callElevator', 'updateNearestElevatorProperties', 'setOnogingRequestsExist']),
+		...mapActions('passengersStore', ['updatePassengersCurrentFloorCall', 'updatePassengersDestinationFloorCall', 'passengerShowsUp']),
+		...mapActions(['resetGeneralState']),
 
 		clearAllTimers(): void {
 			const { clearElevatorTimers } = useElevator();
@@ -114,7 +110,7 @@ export default defineComponent({
 		},
 
 		createBuilding(): void {
-			if (this.numberOfFloors < 1 || this.numberOfElevators < 1) {
+			if (this.inputs.numberOfFloors < 1 || this.inputs.numberOfElevators < 1) {
 				this.warningMessageCreate = MESSAGES.GREATER_THAN_ZERO;
 				return;
 			}
@@ -122,16 +118,16 @@ export default defineComponent({
 			this.clearAllTimers();
 			this.resetGeneralState();
 
-			this.updateNumberOfFloors(Number(this.numberOfFloors) + 1);
-			this.updateNumberOfElevators(Number(this.numberOfElevators));
-			if (this.numberOfElevators > 0 && this.numberOfFloors > 0) {
+			this.updateNumberOfFloors(this.inputs.numberOfFloors + 1);
+			this.updateNumberOfElevators(this.inputs.numberOfElevators);
+			if (this.inputs.numberOfElevators > 0 && this.inputs.numberOfFloors > 0) {
 				this.warningMessageCreate = '';
 				this.warningMessageCall = '';
 				this.buildingCreated = true;
-				this.numberOfFloors = 0;
-				this.numberOfElevators = 0;
-				this.passengersCurrentFloorCall = 0;
-				this.passengersDestinationFloorCall = 0;
+				this.inputs.numberOfFloors = 0;
+				this.inputs.numberOfElevators = 0;
+				this.inputs.passengersCurrentFloorCall = 0;
+				this.inputs.passengersDestinationFloorCall = 0;
 			}
 		},
 
@@ -149,10 +145,10 @@ export default defineComponent({
 				this.warningMessageCreate = '';
 				this.warningMessageCall = '';
 				this.buildingCreated = true;
-				this.numberOfFloors = 0;
-				this.numberOfElevators = 0;
-				this.passengersCurrentFloorCall = 0;
-				this.passengersDestinationFloorCall = 0;
+				this.inputs.numberOfFloors = 0;
+				this.inputs.numberOfElevators = 0;
+				this.inputs.passengersCurrentFloorCall = 0;
+				this.inputs.passengersDestinationFloorCall = 0;
 			}
 		},
 
@@ -160,14 +156,15 @@ export default defineComponent({
 			const { startMoving } = useElevator();
 			if (elevator.passengersToPickUp && elevator.passengersToPickUp.length > 0) {
 				elevator.currentFloorInMotion = elevator.currentFloorInMotion ? elevator.currentFloorInMotion : elevator.currentFloor;
-				if (this.passengersCurrentFloorCall == elevator.currentFloorInMotion) {
-					elevator.destinationFloor = this.passengersDestinationFloorCall;
+				if (this.inputs.passengersCurrentFloorCall == elevator.currentFloorInMotion) {
+					elevator.destinationFloor = this.inputs.passengersDestinationFloorCall;
 					elevator.status = STATUS.READY;
 				}
-				if (this.passengersCurrentFloorCall !== elevator.currentFloorInMotion) {
-					elevator.destinationFloor = this.passengersCurrentFloorCall;
-					elevator.passengersDestinationFloor = this.passengersDestinationFloorCall;
+				if (this.inputs.passengersCurrentFloorCall !== elevator.currentFloorInMotion) {
+					elevator.destinationFloor = this.inputs.passengersCurrentFloorCall;
+					elevator.passengersDestinationFloor = this.inputs.passengersDestinationFloorCall;
 				}
+
 				startMoving(elevator);
 				this.updateElevator(elevator);
 			}
@@ -196,10 +193,10 @@ export default defineComponent({
 
 		handleCallElevator(): void {
 			this.callElevator({
-				currentFloor: this.passengersCurrentFloorCall,
-				destinationFloor: this.passengersDestinationFloorCall,
+				currentFloor: this.inputs.passengersCurrentFloorCall,
+				destinationFloor: this.inputs.passengersDestinationFloorCall,
 			});
-			this.findNearestElevator(this.passengersCurrentFloorCall, this.passengersDestinationFloorCall);
+			this.findNearestElevator(this.inputs.passengersCurrentFloorCall, this.inputs.passengersDestinationFloorCall);
 		},
 
 		resetRandomSection(): void {

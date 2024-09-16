@@ -22,7 +22,7 @@ export default defineComponent({
 		},
 	},
 	computed: {
-		...mapGetters(['passengers']),
+		...mapGetters('passengersStore', ['passengers']),
 	},
 	methods: {
 		passengerSymbol() {

@@ -27,7 +27,8 @@ export default defineComponent({
 	components: { PassengerComponent, ElevatorComponent },
 
 	computed: {
-		...mapGetters(['numberOfFloors', 'numberOfElevators', 'elevators', 'floors']),
+		...mapGetters('floorsStore', ['numberOfFloors', 'floors']),
+		...mapGetters('elevatorsStore', ['numberOfElevators', 'elevators', 'ongoingRequestsExist']),
 	},
 
 	methods: {
@@ -56,6 +57,7 @@ export default defineComponent({
 					});
 				}
 			},
+			deep: true,
 		},
 		floors: {
 			handler(newValue): void {
@@ -64,6 +66,7 @@ export default defineComponent({
 					this.addDOMElementTo('floor', floors);
 				});
 			},
+			deep: true,
 		},
 	},
 });

@@ -7,21 +7,21 @@ import { store } from '../store/index';
 export function useElevator() {
 	const movementInterval = 700;
 	const floors = computed(() => {
-		return store.getters.floors;
+		return store.getters['floorsStore/floors'];
 	});
 
 	let timeouts: number[] = [];
 	let timerIntervals: number[] = [];
-	const ongoingRequestExist = computed(() => store.getters.ongoingRequestsExist);
+	const ongoingRequestExist = computed(() => store.getters['elevatorsStore/ongoingRequestsExist']);
 
 	const updateNearestElevatorProperties = (elevatorProperties: Partial<Elevator>) => {
-		store.dispatch('updateNearestElevatorProperties', elevatorProperties);
+		store.dispatch('elevatorsStore/updateNearestElevatorProperties', elevatorProperties);
 	};
 	const dropPassangerOnDestinationFloor = (elevator: Elevator) => {
-		store.dispatch('dropPassangerOnDestinationFloor', elevator);
+		store.dispatch('passengersStore/dropPassangerOnDestinationFloor', elevator);
 	};
 	const pickUpPassenger = (elevator: Elevator) => {
-		store.dispatch('pickUpPassenger', elevator);
+		store.dispatch('passengersStore/pickUpPassenger', elevator);
 	};
 
 	const checkIfThereArePassangersWaitingOnThisFloor = (elevator: Elevator): void => {

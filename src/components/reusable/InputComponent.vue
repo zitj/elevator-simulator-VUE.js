@@ -1,7 +1,7 @@
 <template>
 	<div class="input-field">
 		<label :for="id">{{ label }}</label>
-		<input :value="modelValue" :id="id" :type="type" :name="name" :min="min" @input="$emit('update:modelValue', $event.target.value)" required />
+		<input :value="modelValue" :id="id" :type="type" :name="name" :min="min" @input="$emit('update:modelValue', type == 'number' ? $event.target.valueAsNumber : $event.target.value)" required />
 	</div>
 </template>
 

@@ -20,7 +20,7 @@ export default defineComponent({
 		};
 	},
 	computed: {
-		...mapGetters(['numberOfFloors', 'numberOfElevators']),
+		...mapGetters('floorsStore', ['numberOfFloors', 'floors']),
 	},
 });
 </script>
